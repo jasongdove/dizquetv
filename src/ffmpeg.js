@@ -471,8 +471,8 @@ class FFMPEG extends events.EventEmitter {
                     `-c:v`, (transcodeVideo ? this.opts.videoEncoder : 'copy'),
                     `-sc_threshold`, `1000000000`,
                 );
-                // do not use -tune stillimage for nv
-                if (stillImage && ! this.opts.videoEncoder.toLowerCase().includes("nv") ) {
+                // -tune stillimage only applies to libx264
+                if (stillImage && this.opts.videoEncoder.toLowerCase() == "libx264") {
                     ffmpegArgs.push('-tune', 'stillimage');
                 }
             }
