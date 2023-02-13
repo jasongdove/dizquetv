@@ -164,8 +164,6 @@ jobs:
             target: linux-arm64
           - os: ubuntu-latest
             target: win-x64
-          - os: windows-latest
-            target: win-x86
     steps:
       - name: Get the sources
         uses: actions/checkout@v3
@@ -179,19 +177,6 @@ jobs:
 
       - name: Cache NPM dependencies
         uses: bahmutov/npm-install@v1.8.29
-
-      - name: Setup VS Dev Environment
-        uses: seanmiddleditch/gha-setup-vsdevenv@v4
-
-      - name: Setup python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '2.7' 
-        if: ${{ matrix.target == 'win-x86' }}
-
-      - name: Set up NASM
-        uses: ilammy/setup-nasm@v1.4.0
-        if: ${{ matrix.target == 'win-x86' }}
 
       - name: Build
         shell: bash
