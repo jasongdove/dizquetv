@@ -1,9 +1,9 @@
 FROM node:12.18-alpine3.12
 WORKDIR /home/node/app
 COPY package*.json ./
-RUN npm install && npm install -g browserify nexe@3.3.7
-COPY --from=vexorian/dizquetv:nexecache /var/nexe/linux-x64-12.16.2 /var/nexe/
+RUN npm ci && npm install -g browserify nexe@3.3.7
 COPY . .
+ARG INFO_VERSION="unknown"
 RUN sed -i "s/.*VERSION_NAME.*/    VERSION_NAME: \"$INFO_VERSION\",/g" src/constants.js
 RUN npm run build && LINUXBUILD=dizquetv sh make_dist.sh linuxonly
 
