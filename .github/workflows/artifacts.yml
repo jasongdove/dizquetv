@@ -164,7 +164,7 @@ jobs:
             target: linux-arm64
           - os: ubuntu-latest
             target: win-x64
-          - os: ubuntu-latest
+          - os: windows-latest
             target: win-x86
     steps:
       - name: Get the sources
@@ -184,6 +184,10 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '2.7' 
+        if: ${{ matrix.target == 'win-x86' }}
+
+      - name: Set up NASM
+        uses: ilammy/setup-nasm@v1.4.0
         if: ${{ matrix.target == 'win-x86' }}
 
       - name: Build
@@ -212,14 +216,13 @@ jobs:
           tag: ${{ inputs.release_tag }}
           fail-if-no-assets: false
           assets: |
-            *${{ matrix.target }}
-            *${{ matrix.target }}.exe
+            *${{ matrix.target }}*
       - name: Publish
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
           tag_name: ${{ inputs.release_tag }}
           files: |
-            dist/${{ env.RELEASE_NAME }}
+            dist/${{ env.RELEASE_NAME }}*
         env:
           GITHUB_TOKEN: ${{ secrets.gh_token }}
