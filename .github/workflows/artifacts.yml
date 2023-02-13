@@ -191,7 +191,7 @@ jobs:
           release_name="dizquetv-${{ inputs.release_version }}-${{ matrix.target }}"
           echo "RELEASE_NAME=${release_name}" >> $GITHUB_ENV
 
-          rm -r dist
+          rm -rf dist
           npm run build || exit 1
           npm run compile  || exit 1
           cp -r web dist/web
