@@ -1,13 +1,13 @@
-const exec = require('child_process').exec;
+const exec = require("child_process").exec;
 
 class FFMPEGInfo {
     constructor(opts) {
-        this.ffmpegPath = opts.ffmpegPath
+        this.ffmpegPath = opts.ffmpegPath;
     }
     async getVersion() {
         try {
-            let s = await new Promise( (resolve, reject) => {
-                exec( `"${this.ffmpegPath}" -version`, function(error, stdout, stderr){
+            const s = await new Promise((resolve, reject) => {
+                exec(`"${this.ffmpegPath}" -version`, function (error, stdout, stderr) {
                     if (error !== null) {
                         reject(error);
                     } else {
@@ -15,7 +15,7 @@ class FFMPEGInfo {
                     }
                 });
             });
-            var m = s.match( /version\s+([^\s]+)\s+.*Copyright/ )
+            const m = s.match(/version\s+([^\s]+)\s+.*Copyright/);
             if (m == null) {
                 console.error("ffmpeg -version command output not in the expected format: " + s);
                 return s;
@@ -28,4 +28,4 @@ class FFMPEGInfo {
     }
 }
 
-module.exports = FFMPEGInfo
+module.exports = FFMPEGInfo;
