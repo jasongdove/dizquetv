@@ -163,13 +163,13 @@ jobs:
             target: linux-x64
           - os: ubuntu-latest
             kind: linux
-            target: linux-arm
-          - os: ubuntu-latest
-            kind: linux
             target: linux-arm64
           - os: windows-latest
             kind: windows
             target: win-x64
+          - os: windows-latest
+            kind: windows
+            target: win-x86
     steps:
       - name: Get the sources
         uses: actions/checkout@v3
@@ -183,16 +183,6 @@ jobs:
 
       - name: Cache NPM dependencies
         uses: bahmutov/npm-install@v1.8.29
-
-      - name: Setup multilib
-        run: sudo apt-get install -y gcc-multilib g++-multilib
-        if: ${{ matrix.target == 'linux-arm' }}
-
-      - name: Setup python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '2.7' 
-        if: ${{ matrix.target == 'linux-arm' }}
 
       - name: Build
         shell: bash
