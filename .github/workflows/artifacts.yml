@@ -184,6 +184,10 @@ jobs:
       - name: Cache NPM dependencies
         uses: bahmutov/npm-install@v1.8.29
 
+      - name: Setup multilib
+        run: sudo apt-get install -y gcc-multilib g++-multilib
+        if: ${{ matrix.target == 'linux-arm' }}
+
       - name: Build
         shell: bash
         run: |
