@@ -31,14 +31,14 @@ jobs:
             path: ''
             suffix: ''
             qemu: false
-          # - name: nvidia
-          #   path: 'nvidia/'
-          #   suffix: '-nvidia'
-          #   qemu: false
-          # - name: vaapi
-          #   path: 'vaapi/'
-          #   suffix: '-vaapi'
-          #   qemu: false
+          - name: nvidia
+            path: 'nvidia/'
+            suffix: '-nvidia'
+            qemu: false
+          - name: vaapi
+            path: 'vaapi/'
+            suffix: '-vaapi'
+            qemu: false
           # - name: arm32v7
           #   path: 'arm32v7/'
           #   suffix: '-arm'

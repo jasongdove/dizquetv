@@ -7,7 +7,7 @@ COPY . .
 RUN sed -i "s/.*VERSION_NAME.*/    VERSION_NAME: \"$INFO_VERSION\",/g" src/constants.js
 RUN npm run build && LINUXBUILD=dizquetv sh make_dist.sh linuxonly
 
-FROM jasongdove/ersatztv-ffmpeg:5.1.2
+FROM jasongdove/ersatztv-ffmpeg:5.1.2-vaapi
 EXPOSE 8000
 WORKDIR /home/node/app
 ENTRYPOINT [ "./dizquetv" ]
