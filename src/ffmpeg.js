@@ -401,6 +401,10 @@ class FFMPEG extends events.EventEmitter {
                 audioComplex += `;${currentAudio}volume=${f}[boosted]`;
                 currentAudio = "[boosted]";
             }
+
+            let transcodeAudio =
+                this.opts.normalizeAudioCodec && isDifferentAudioCodec(streamStats.audioCodec, this.opts.audioEncoder);
+
             // Align audio is just the apad filter applied to audio stream
             if (this.apad && this.audioOnly !== true) {
                 // it doesn't make much sense to pad audio when there is no video
@@ -416,8 +420,6 @@ class FFMPEG extends events.EventEmitter {
             // filter_complex and this allows us to avoid transcoding.
             let transcodeVideo =
                 this.opts.normalizeVideoCodec && isDifferentVideoCodec(streamStats.videoCodec, this.opts.videoEncoder);
-            let transcodeAudio =
-                this.opts.normalizeAudioCodec && isDifferentAudioCodec(streamStats.audioCodec, this.opts.audioEncoder);
             let filterComplex = "";
             if (!transcodeVideo && currentVideo == "[minsiz]") {
                 // do not change resolution if no other transcoding will be done
