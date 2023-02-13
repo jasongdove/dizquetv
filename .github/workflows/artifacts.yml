@@ -184,6 +184,12 @@ jobs:
       - name: Cache NPM dependencies
         uses: bahmutov/npm-install@v1.8.29
 
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '2.7' 
+        if: ${{ matrix.target == 'win-x86' }}
+
       - name: Build
         shell: bash
         run: |
