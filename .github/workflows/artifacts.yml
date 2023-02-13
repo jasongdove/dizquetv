@@ -204,7 +204,7 @@ jobs:
           cp -r locales/ dist/locales/
           cp pkg.json dist/
           cd dist
-          pkg index.js -c pkg.json -t node12-${{ matrix.target }} -o "$release_name"
+          pkg index.js -c pkg.json --no-bytecode -t node12-${{ matrix.target }} -o "$release_name"
 
       - name: Delete old release assets
         uses: mknejp/delete-release-assets@v1
