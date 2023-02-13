@@ -188,6 +188,12 @@ jobs:
         run: sudo apt-get install -y gcc-multilib g++-multilib
         if: ${{ matrix.target == 'linux-arm' }}
 
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10' 
+        if: ${{ matrix.target == 'linux-arm64' }}
+
       - name: Build
         shell: bash
         run: |
@@ -204,7 +210,7 @@ jobs:
           cp -r locales/ dist/locales/
           cp pkg.json dist/
           cd dist
-          pkg index.js -c pkg.json --no-bytecode -t node12-${{ matrix.target }} -o "$release_name"
+          pkg index.js -c pkg.json --no-bytecode --public-packages "*" --public -t node12-${{ matrix.target }} -o "$release_name"
 
       - name: Delete old release assets
         uses: mknejp/delete-release-assets@v1
