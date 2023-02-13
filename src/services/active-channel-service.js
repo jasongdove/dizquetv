@@ -1,13 +1,10 @@
-const constants = require("../constants");
+import { FORGETFULNESS_BUFFER, PLAYED_MONITOR_CHECK_FREQUENCY, MAX_CHANNEL_IDLE } from "../constants";
 
 /* Keeps track of which channels are being played, calls on-demand service
  when they stop playing.
 */
 
 class ActiveChannelService {
-    /****
-     *
-     **/
     constructor(onDemandService, channelService) {
         this.cache = {};
         this.onDemandService = onDemandService;
@@ -20,9 +17,9 @@ class ActiveChannelService {
     }
 
     loadChannelsForFirstTry() {
-        let fun = async () => {
+        const fun = async () => {
             try {
-                let numbers = await this.channelService.getAllChannelNumbers();
+                const numbers = await this.channelService.getAllChannelNumbers();
                 numbers.forEach((number) => {
                     this.ensure(this.timeNoDelta, number);
                 });
@@ -36,7 +33,7 @@ class ActiveChannelService {
 
     async shutdown() {
         try {
-            let t = new Date().getTime() - constants.FORGETFULNESS_BUFFER;
+            const t = new Date().getTime() - FORGETFULNESS_BUFFER;
             for (const [channelNumber, value] of Object.entries(this.cache)) {
                 console.log("Forcefully registering channel " + channelNumber + " as stopped...");
                 delete this.cache[channelNumber];
@@ -48,13 +45,13 @@ class ActiveChannelService {
     }
 
     setupTimer() {
-        this.handle = setTimeout(() => this.timerLoop(), constants.PLAYED_MONITOR_CHECK_FREQUENCY);
+        this.handle = setTimeout(() => this.timerLoop(), PLAYED_MONITOR_CHECK_FREQUENCY);
     }
 
     checkChannel(t, channelNumber, value) {
         if (value.active === 0) {
-            let delta = t - value.lastUpdate;
-            if (delta >= constants.MAX_CHANNEL_IDLE || value.lastUpdate <= this.timeNoDelta) {
+            const delta = t - value.lastUpdate;
+            if (delta >= MAX_CHANNEL_IDLE || value.lastUpdate <= this.timeNoDelta) {
                 console.log("Channel : " + channelNumber + " is not playing...");
                 onDemandService.registerChannelStopped(channelNumber, value.stopTime);
                 delete this.cache[channelNumber];
@@ -63,7 +60,7 @@ class ActiveChannelService {
     }
 
     checkChannels() {
-        let t = new Date().getTime();
+        const t = new Date().getTime();
         for (const [channelNumber, value] of Object.entries(this.cache)) {
             this.checkChannel(t, channelNumber, value);
         }
@@ -85,7 +82,7 @@ class ActiveChannelService {
             console.log("Channel is being played: " + channelNumber);
         }
         this.cache[channelNumber].active++;
-        //console.log(channelNumber + " ++active=" + this.cache[channelNumber].active );
+        // console.log(channelNumber + " ++active=" + this.cache[channelNumber].active );
         this.cache[channelNumber].stopTime = 0;
         this.cache[channelNumber].lastUpdate = new Date().getTime();
     }
@@ -99,8 +96,8 @@ class ActiveChannelService {
             console.error("Serious issue with channel active service, double delete");
         } else {
             this.cache[channelNumber].active--;
-            //console.log(channelNumber + " --active=" + this.cache[channelNumber].active );
-            let s = this.cache[channelNumber].stopTime;
+            // console.log(channelNumber + " --active=" + this.cache[channelNumber].active );
+            const s = this.cache[channelNumber].stopTime;
             if (typeof s === "undefined" || s < t) {
                 this.cache[channelNumber].stopTime = t;
             }
@@ -133,9 +130,9 @@ class ActiveChannelService {
     }
 
     isActive(channelNumber) {
-        let bol = this.isActiveWrapped(channelNumber);
+        const bol = this.isActiveWrapped(channelNumber);
         return bol;
     }
 }
 
-module.exports = ActiveChannelService;
+export default ActiveChannelService;

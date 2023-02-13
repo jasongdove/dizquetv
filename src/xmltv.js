@@ -1,12 +1,10 @@
-const XMLWriter = require("xml-writer");
-const fs = require("fs");
-
-module.exports = { WriteXMLTV: WriteXMLTV, shutdown: shutdown };
+import XMLWriter from "xml-writer";
+import { createWriteStream } from "fs";
 
 let isShutdown = false;
 let isWorking = false;
 
-async function WriteXMLTV(json, xmlSettings, throttle, cacheImageService) {
+export async function WriteXMLTV(json, xmlSettings, throttle, cacheImageService) {
     if (isShutdown) {
         return;
     }
@@ -25,8 +23,8 @@ async function WriteXMLTV(json, xmlSettings, throttle, cacheImageService) {
 
 function writePromise(json, xmlSettings, throttle, cacheImageService) {
     return new Promise((resolve, reject) => {
-        let ws = fs.createWriteStream(xmlSettings.file);
-        let xw = new XMLWriter(true, (str, enc) => ws.write(str, enc));
+        const ws = createWriteStream(xmlSettings.file);
+        const xw = new XMLWriter(true, (str, enc) => ws.write(str, enc));
         ws.on("close", () => {
             resolve();
         });
@@ -35,12 +33,12 @@ function writePromise(json, xmlSettings, throttle, cacheImageService) {
         });
         _writeDocStart(xw);
         async function middle() {
-            let channelNumbers = [];
+            const channelNumbers = [];
             Object.keys(json).forEach((key, index) => channelNumbers.push(key));
-            let channels = channelNumbers.map((number) => json[number].channel);
+            const channels = channelNumbers.map((number) => json[number].channel);
             _writeChannels(xw, channels);
             for (let i = 0; i < channelNumbers.length; i++) {
-                let number = channelNumbers[i];
+                const number = channelNumbers[i];
                 await _writePrograms(
                     xw,
                     json[number].channel,
@@ -111,7 +109,7 @@ async function _writeProgramme(channel, program, xw, xmlSettings, cacheImageServ
     xw.endElement();
     xw.writeRaw("\n        <previously-shown/>");
 
-    //sub-title
+    // sub-title
     if (typeof program.sub !== "undefined") {
         xw.startElement("sub-title");
         xw.writeAttribute("lang", "en");
@@ -167,7 +165,7 @@ function wait(x) {
     });
 }
 
-async function shutdown() {
+export async function shutdown() {
     isShutdown = true;
     console.log("Shutting down xmltv writer.");
     if (isWorking) {

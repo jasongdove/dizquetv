@@ -1,7 +1,7 @@
-//This is an exact copy of the file with the same now in the web project
-//one of these days, we'll figure out how to share the code.
-module.exports = function () {
-    let movieTitleOrder = {};
+// This is an exact copy of the file with the same now in the web project
+// one of these days, we'll figure out how to share the code.
+export default function () {
+    const movieTitleOrder = {};
     let movieTitleOrderNumber = 0;
 
     return (program) => {
@@ -26,7 +26,7 @@ module.exports = function () {
                 hasShow: false,
             };
         } else if (program.type === "movie") {
-            let key = program.serverKey + "|" + program.key;
+            const key = program.serverKey + "|" + program.key;
             if (typeof movieTitleOrder[key] === "undefined") {
                 movieTitleOrder[key] = movieTitleOrderNumber++;
             }
@@ -63,4 +63,4 @@ module.exports = function () {
             };
         }
     };
-};
+}

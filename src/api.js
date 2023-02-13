@@ -1,16 +1,16 @@
-const express = require("express");
-const path = require("path");
-const fs = require("fs");
-const databaseMigration = require("./database-migration");
-const constants = require("./constants");
-const JSONStream = require("JSONStream");
-const FFMPEGInfo = require("./ffmpeg-info");
-const PlexServerDB = require("./dao/plex-server-db");
-const Plex = require("./plex.js");
+import { Router } from "express";
+import { join } from "path";
+import { readFileSync } from "fs";
+import { defaultFFMPEG } from "./database-migration";
+import { VERSION_NAME } from "./constants";
+import { stringify } from "JSONStream";
+import FFMPEGInfo from "./ffmpeg-info";
+import PlexServerDB from "./dao/plex-server-db";
+import Plex from "./plex.js";
 
-const timeSlotsService = require("./services/time-slots-service");
-const randomSlotsService = require("./services/random-slots-service");
-const throttle = require("./services/throttle");
+import timeSlotsService from "./services/time-slots-service";
+import randomSlotsService from "./services/random-slots-service";
+import throttle from "./services/throttle";
 
 function safeString(object) {
     let o = object;
@@ -23,18 +23,19 @@ function safeString(object) {
     return String(o);
 }
 
-module.exports = { router: api };
+export const router = api;
+
 function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideService, _m3uService, eventService) {
-    let m3uService = _m3uService;
-    const router = express.Router();
+    const m3uService = _m3uService;
+    const router = Router();
     const plexServerDB = new PlexServerDB(channelService, fillerDB, customShowDB, db);
 
     router.get("/api/version", async (req, res) => {
         try {
-            let ffmpegSettings = db["ffmpeg-settings"].find()[0];
-            let v = await new FFMPEGInfo(ffmpegSettings).getVersion();
+            const ffmpegSettings = db["ffmpeg-settings"].find()[0];
+            const v = await new FFMPEGInfo(ffmpegSettings).getVersion();
             res.send({
-                dizquetv: constants.VERSION_NAME,
+                dizquetv: VERSION_NAME,
                 ffmpeg: v,
                 nodejs: process.version,
             });
@@ -47,7 +48,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     // Plex Servers
     router.get("/api/plex-servers", (req, res) => {
         try {
-            let servers = db["plex-servers"].find();
+            const servers = db["plex-servers"].find();
             servers.sort((a, b) => {
                 return a.index - b.index;
             });
@@ -59,14 +60,14 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     });
     router.post("/api/plex-servers/status", async (req, res) => {
         try {
-            let servers = db["plex-servers"].find({
+            const servers = db["plex-servers"].find({
                 name: req.body.name,
             });
             if (servers.length != 1) {
                 return res.status(404).send(req.t("api.plex_server_not_found"));
             }
-            let plex = new Plex(servers[0]);
-            let s = await Promise.race([
+            const plex = new Plex(servers[0]);
+            const s = await Promise.race([
                 (async () => {
                     return await plex.checkServerStatus();
                 })(),
@@ -86,9 +87,9 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     });
     router.post("/api/plex-servers/foreignstatus", async (req, res) => {
         try {
-            let server = req.body;
-            let plex = new Plex(server);
-            let s = await Promise.race([
+            const server = req.body;
+            const plex = new Plex(server);
+            const s = await Promise.race([
                 (async () => {
                     return await plex.checkServerStatus();
                 })(),
@@ -113,7 +114,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
             if (typeof name === "undefined") {
                 return res.status(400).send("Missing name");
             }
-            let report = await plexServerDB.deleteServer(name);
+            const report = await plexServerDB.deleteServer(name);
             res.send(report);
             eventService.push("settings-update", {
                 message: `Plex server ${name} removed.`,
@@ -141,7 +142,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     });
     router.post("/api/plex-servers", async (req, res) => {
         try {
-            let report = await plexServerDB.updateServer(req.body);
+            const report = await plexServerDB.updateServer(req.body);
             let modifiedPrograms = 0;
             let destroyedPrograms = 0;
             report.forEach((r) => {
@@ -205,7 +206,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     // Channels
     router.get("/api/channels", async (req, res) => {
         try {
-            let channels = await channelService.getAllChannelNumbers();
+            const channels = await channelService.getAllChannelNumbers();
             channels.sort((a, b) => {
                 return a.number < b.number ? -1 : 1;
             });
@@ -217,8 +218,8 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     });
     router.get("/api/channel/:number", async (req, res) => {
         try {
-            let number = parseInt(req.params.number, 10);
-            let channel = await channelService.getChannel(number);
+            const number = parseInt(req.params.number, 10);
+            const channel = await channelService.getChannel(number);
 
             if (channel != null) {
                 res.send(channel);
@@ -232,11 +233,11 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     });
     router.get("/api/channel/programless/:number", async (req, res) => {
         try {
-            let number = parseInt(req.params.number, 10);
-            let channel = await channelService.getChannel(number);
+            const number = parseInt(req.params.number, 10);
+            const channel = await channelService.getChannel(number);
 
             if (channel != null) {
-                let copy = {};
+                const copy = {};
                 Object.keys(channel).forEach((key) => {
                     if (key != "programs") {
                         copy[key] = channel[key];
@@ -254,11 +255,11 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
 
     router.get("/api/channel/programs/:number", async (req, res) => {
         try {
-            let number = parseInt(req.params.number, 10);
-            let channel = await channelService.getChannel(number);
+            const number = parseInt(req.params.number, 10);
+            const channel = await channelService.getChannel(number);
 
             if (channel != null) {
-                let programs = channel.programs;
+                const programs = channel.programs;
                 if (typeof programs === "undefined") {
                     return res.status(404).send("Channel doesn't have programs?");
                 }
@@ -266,7 +267,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
                     "Content-Type": "application/json",
                 });
 
-                let transformStream = JSONStream.stringify();
+                const transformStream = stringify();
                 transformStream.pipe(res);
 
                 for (let i = 0; i < programs.length; i++) {
@@ -284,8 +285,8 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     });
     router.get("/api/channel/description/:number", async (req, res) => {
         try {
-            let number = parseInt(req.params.number, 10);
-            let channel = await channelService.getChannel(number);
+            const number = parseInt(req.params.number, 10);
+            const channel = await channelService.getChannel(number);
             if (channel != null) {
                 res.send({
                     number: channel.number,
@@ -303,7 +304,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     });
     router.get("/api/channelNumbers", async (req, res) => {
         try {
-            let channels = await channelService.getAllChannelNumbers();
+            const channels = await channelService.getAllChannelNumbers();
             channels.sort((a, b) => {
                 return parseInt(a) - parseInt(b);
             });
@@ -351,7 +352,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
                 });
             } else {
                 const logo = req.files.image;
-                logo.mv(path.join(process.env.DATABASE, "/images/uploads/", logo.name));
+                logo.mv(join(process.env.DATABASE, "/images/uploads/", logo.name));
 
                 res.send({
                     status: true,
@@ -372,7 +373,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     // Filler
     router.get("/api/fillers", async (req, res) => {
         try {
-            let fillers = await fillerDB.getAllFillersInfo();
+            const fillers = await fillerDB.getAllFillersInfo();
             res.send(fillers);
         } catch (err) {
             console.error(err);
@@ -381,11 +382,11 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     });
     router.get("/api/filler/:id", async (req, res) => {
         try {
-            let id = req.params.id;
+            const id = req.params.id;
             if (typeof id === "undefined") {
                 return res.status(400).send("Missing id");
             }
-            let filler = await fillerDB.getFiller(id);
+            const filler = await fillerDB.getFiller(id);
             if (filler == null) {
                 return res.status(404).send("Filler not found");
             }
@@ -397,7 +398,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     });
     router.post("/api/filler/:id", async (req, res) => {
         try {
-            let id = req.params.id;
+            const id = req.params.id;
             if (typeof id === "undefined") {
                 return res.status(400).send("Missing id");
             }
@@ -410,7 +411,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     });
     router.put("/api/filler", async (req, res) => {
         try {
-            let uuid = await fillerDB.createFiller(req.body);
+            const uuid = await fillerDB.createFiller(req.body);
             return res.status(201).send({ id: uuid });
         } catch (err) {
             console.error(err);
@@ -419,7 +420,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     });
     router.delete("/api/filler/:id", async (req, res) => {
         try {
-            let id = req.params.id;
+            const id = req.params.id;
             if (typeof id === "undefined") {
                 return res.status(400).send("Missing id");
             }
@@ -433,11 +434,11 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
 
     router.get("/api/filler/:id/channels", async (req, res) => {
         try {
-            let id = req.params.id;
+            const id = req.params.id;
             if (typeof id === "undefined") {
                 return res.status(400).send("Missing id");
             }
-            let channels = await fillerDB.getFillerChannels(id);
+            const channels = await fillerDB.getFillerChannels(id);
             if (channels == null) {
                 return res.status(404).send("Filler not found");
             }
@@ -451,7 +452,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     // Custom Shows
     router.get("/api/shows", async (req, res) => {
         try {
-            let fillers = await customShowDB.getAllShowsInfo();
+            const fillers = await customShowDB.getAllShowsInfo();
             res.send(fillers);
         } catch (err) {
             console.error(err);
@@ -460,11 +461,11 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     });
     router.get("/api/show/:id", async (req, res) => {
         try {
-            let id = req.params.id;
+            const id = req.params.id;
             if (typeof id === "undefined") {
                 return res.status(400).send("Missing id");
             }
-            let filler = await customShowDB.getShow(id);
+            const filler = await customShowDB.getShow(id);
             if (filler == null) {
                 return res.status(404).send("Custom show not found");
             }
@@ -476,7 +477,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     });
     router.post("/api/show/:id", async (req, res) => {
         try {
-            let id = req.params.id;
+            const id = req.params.id;
             if (typeof id === "undefined") {
                 return res.status(400).send("Missing id");
             }
@@ -489,7 +490,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     });
     router.put("/api/show", async (req, res) => {
         try {
-            let uuid = await customShowDB.createShow(req.body);
+            const uuid = await customShowDB.createShow(req.body);
             return res.status(201).send({ id: uuid });
         } catch (err) {
             console.error(err);
@@ -498,7 +499,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     });
     router.delete("/api/show/:id", async (req, res) => {
         try {
-            let id = req.params.id;
+            const id = req.params.id;
             if (typeof id === "undefined") {
                 return res.status(400).send("Missing id");
             }
@@ -513,7 +514,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     // FFMPEG SETTINGS
     router.get("/api/ffmpeg-settings", (req, res) => {
         try {
-            let ffmpeg = db["ffmpeg-settings"].find()[0];
+            const ffmpeg = db["ffmpeg-settings"].find()[0];
             res.send(ffmpeg);
         } catch (err) {
             console.error(err);
@@ -523,8 +524,8 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     router.put("/api/ffmpeg-settings", (req, res) => {
         try {
             db["ffmpeg-settings"].update({ _id: req.body._id }, req.body);
-            let ffmpeg = db["ffmpeg-settings"].find()[0];
-            let err = fixupFFMPEGSettings(ffmpeg);
+            const ffmpeg = db["ffmpeg-settings"].find()[0];
+            const err = fixupFFMPEGSettings(ffmpeg);
             if (typeof err !== "undefined") {
                 return res.status(400).send(err);
             }
@@ -554,7 +555,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     router.post("/api/ffmpeg-settings", (req, res) => {
         // RESET
         try {
-            let ffmpeg = databaseMigration.defaultFFMPEG();
+            let ffmpeg = defaultFFMPEG();
             ffmpeg.ffmpegPath = req.body.ffmpegPath;
             db["ffmpeg-settings"].update({ _id: req.body._id }, ffmpeg);
             ffmpeg = db["ffmpeg-settings"].find()[0];
@@ -593,7 +594,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     // PLEX SETTINGS
     router.get("/api/plex-settings", (req, res) => {
         try {
-            let plex = db["plex-settings"].find()[0];
+            const plex = db["plex-settings"].find()[0];
             res.send(plex);
         } catch (err) {
             console.error(err);
@@ -603,7 +604,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     router.put("/api/plex-settings", (req, res) => {
         try {
             db["plex-settings"].update({ _id: req.body._id }, req.body);
-            let plex = db["plex-settings"].find()[0];
+            const plex = db["plex-settings"].find()[0];
             res.send(plex);
             eventService.push("settings-update", {
                 message: "Plex configuration updated.",
@@ -654,7 +655,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
                     pathReplaceWith: "",
                 },
             );
-            let plex = db["plex-settings"].find()[0];
+            const plex = db["plex-settings"].find()[0];
             res.send(plex);
             eventService.push("settings-update", {
                 message: "Plex configuration reset.",
@@ -692,7 +693,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     // XMLTV SETTINGS
     router.get("/api/xmltv-settings", (req, res) => {
         try {
-            let xmltv = db["xmltv-settings"].find()[0];
+            const xmltv = db["xmltv-settings"].find()[0];
             res.send(xmltv);
         } catch (err) {
             console.error(err);
@@ -749,7 +750,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
                     file: process.env.DATABASE + "/xmltv.xml",
                 },
             );
-            var xmltv = db["xmltv-settings"].find()[0];
+            const xmltv = db["xmltv-settings"].find()[0];
             res.send(xmltv);
             eventService.push("settings-update", {
                 message: "xmltv settings reset.",
@@ -778,7 +779,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
 
     router.get("/api/guide/status", async (req, res) => {
         try {
-            let s = await guideService.getStatus();
+            const s = await guideService.getStatus();
             res.send(s);
         } catch (err) {
             console.error(err);
@@ -788,7 +789,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
 
     router.get("/api/guide/debug", async (req, res) => {
         try {
-            let s = await guideService.get();
+            const s = await guideService.get();
             res.send(s);
         } catch (err) {
             console.error(err);
@@ -798,9 +799,9 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
 
     router.get("/api/guide/channels/:number", async (req, res) => {
         try {
-            let dateFrom = new Date(req.query.dateFrom);
-            let dateTo = new Date(req.query.dateTo);
-            let lineup = await guideService.getChannelLineup(req.params.number, dateFrom, dateTo);
+            const dateFrom = new Date(req.query.dateFrom);
+            const dateTo = new Date(req.query.dateTo);
+            const lineup = await guideService.getChannelLineup(req.params.number, dateFrom, dateTo);
             if (lineup == null) {
                 console.log(`GET /api/guide/channels/${req.params.number} : 404 Not Found`);
                 res.status(404).send("Channel not found in TV guide");
@@ -813,10 +814,10 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
         }
     });
 
-    //HDHR SETTINGS
+    // HDHR SETTINGS
     router.get("/api/hdhr-settings", (req, res) => {
         try {
-            let hdhr = db["hdhr-settings"].find()[0];
+            const hdhr = db["hdhr-settings"].find()[0];
             res.send(hdhr);
         } catch (err) {
             console.error(err);
@@ -826,7 +827,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
     router.put("/api/hdhr-settings", (req, res) => {
         try {
             db["hdhr-settings"].update({ _id: req.body._id }, req.body);
-            let hdhr = db["hdhr-settings"].find()[0];
+            const hdhr = db["hdhr-settings"].find()[0];
             res.send(hdhr);
             eventService.push("settings-update", {
                 message: "HDHR configuration updated.",
@@ -860,7 +861,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
                     autoDiscovery: true,
                 },
             );
-            var hdhr = db["hdhr-settings"].find()[0];
+            const hdhr = db["hdhr-settings"].find()[0];
             res.send(hdhr);
             eventService.push("settings-update", {
                 message: "HDHR configuration reset.",
@@ -893,8 +894,8 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
             res.set("Cache-Control", "no-store");
             res.type("application/xml");
 
-            let xmltvSettings = db["xmltv-settings"].find()[0];
-            const fileContent = await fs.readFileSync(xmltvSettings.file, "utf8");
+            const xmltvSettings = db["xmltv-settings"].find()[0];
+            const fileContent = await readFileSync(xmltvSettings.file, "utf8");
             const fileFinal = fileContent.replace(/\{\{host\}\}/g, host);
             res.send(fileFinal);
         } catch (err) {
@@ -903,10 +904,10 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
         }
     });
 
-    //tool services
+    // tool services
     router.post("/api/channel-tools/time-slots", async (req, res) => {
         try {
-            let toolRes = await timeSlotsService(req.body.programs, req.body.schedule);
+            const toolRes = await timeSlotsService(req.body.programs, req.body.schedule);
             if (typeof toolRes.userError !== "undefined") {
                 console.error("time slots error: " + toolRes.userError);
                 return res.status(400).send(toolRes.userError);
@@ -920,7 +921,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
 
     router.post("/api/channel-tools/random-slots", async (req, res) => {
         try {
-            let toolRes = await randomSlotsService(req.body.programs, req.body.schedule);
+            const toolRes = await randomSlotsService(req.body.programs, req.body.schedule);
             if (typeof toolRes.userError !== "undefined") {
                 console.error("random slots error: " + toolRes.userError);
                 return res.status(400).send(toolRes.userError);
@@ -952,7 +953,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
         xmltvInterval.restartInterval();
     }
     async function streamToolResult(toolRes, res) {
-        let programs = toolRes.programs;
+        const programs = toolRes.programs;
         delete toolRes.programs;
         let s = JSON.stringify(toolRes);
         s = s.slice(0, -1);
@@ -961,7 +962,7 @@ function api(db, channelService, fillerDB, customShowDB, xmltvInterval, guideSer
             "Content-Type": "application/json",
         });
 
-        let transformStream = JSONStream.stringify(s + ',"programs":[', ",", "]}");
+        const transformStream = stringify(s + ',"programs":[', ",", "]}");
         transformStream.pipe(res);
 
         for (let i = 0; i < programs.length; i++) {

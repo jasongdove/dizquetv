@@ -1,15 +1,8 @@
-module.exports = {
-    getCurrentProgramAndTimeElapsed: getCurrentProgramAndTimeElapsed,
-    createLineup: createLineup,
-    getWatermark: getWatermark,
-    generateChannelContext: generateChannelContext,
-};
-
-let channelCache = require("./channel-cache");
-const SLACK = require("./constants").SLACK;
-const randomJS = require("random-js");
-const Random = randomJS.Random;
-const random = new Random(randomJS.MersenneTwister19937.autoSeed());
+import { getProgramLastPlayTime, getFillerLastPlayTime } from "./channel-cache";
+import { SLACK } from "./constants";
+import { Random as _Random, MersenneTwister19937 } from "random-js";
+const Random = _Random;
+const random = new Random(MersenneTwister19937.autoSeed());
 
 const CHANNEL_CONTEXT_KEYS = [
     "disableFillerOverlay",
@@ -22,13 +15,14 @@ const CHANNEL_CONTEXT_KEYS = [
     "number",
 ];
 
-module.exports.random = random;
+const _random = random;
+export { _random as random };
 
-function getCurrentProgramAndTimeElapsed(date, channel) {
-    let channelStartTime = new Date(channel.startTime).getTime();
+export function getCurrentProgramAndTimeElapsed(date, channel) {
+    const channelStartTime = new Date(channel.startTime).getTime();
     if (channelStartTime > date) {
-        let t0 = date;
-        let t1 = channelStartTime;
+        const t0 = date;
+        const t1 = channelStartTime;
         console.log("Channel start time is above the given date. Flex time is picked till that.");
         return {
             program: {
@@ -42,7 +36,7 @@ function getCurrentProgramAndTimeElapsed(date, channel) {
     let timeElapsed = (date - channelStartTime) % channel.duration;
     let currentProgramIndex = -1;
     for (let y = 0, l2 = channel.programs.length; y < l2; y++) {
-        let program = channel.programs[y];
+        const program = channel.programs[y];
         if (timeElapsed - program.duration < 0) {
             currentProgramIndex = y;
             if (program.duration > 2 * SLACK && timeElapsed > program.duration - SLACK) {
@@ -64,18 +58,18 @@ function getCurrentProgramAndTimeElapsed(date, channel) {
     };
 }
 
-function createLineup(obj, channel, fillers, isFirst) {
+export function createLineup(obj, channel, fillers, isFirst) {
     let timeElapsed = obj.timeElapsed;
     // Start time of a file is never consistent unless 0. Run time of an episode can vary.
     // When within 30 seconds of start time, just make the time 0 to smooth things out
     // Helps prevents loosing first few seconds of an episode upon lineup change
-    let activeProgram = obj.program;
+    const activeProgram = obj.program;
     let beginningOffset = 0;
 
-    let lineup = [];
+    const lineup = [];
 
     if (typeof activeProgram.err !== "undefined") {
-        let remaining = activeProgram.duration - timeElapsed;
+        const remaining = activeProgram.duration - timeElapsed;
         lineup.push({
             type: "offline",
             title: "Error",
@@ -89,16 +83,16 @@ function createLineup(obj, channel, fillers, isFirst) {
     }
 
     if (activeProgram.isOffline === true) {
-        //offline case
+        // offline case
         let remaining = activeProgram.duration - timeElapsed;
-        //look for a random filler to play
+        // look for a random filler to play
         let filler = null;
         let special = null;
 
         if (channel.offlineMode === "clip" && channel.fallback.length != 0) {
             special = JSON.parse(JSON.stringify(channel.fallback[0]));
         }
-        let randomResult = pickRandomWithMaxDuration(
+        const randomResult = pickRandomWithMaxDuration(
             channel,
             fillers,
             remaining + (isFirst ? 7 * 24 * 60 * 60 * 1000 : 0),
@@ -123,9 +117,9 @@ function createLineup(obj, channel, fillers, isFirst) {
                 }
             } else if (isFirst) {
                 fillerstart = Math.max(0, filler.duration - remaining);
-                //it's boring and odd to tune into a channel and it's always
-                //the start of a commercial.
-                let more = Math.max(0, filler.duration - fillerstart - 15000 - SLACK);
+                // it's boring and odd to tune into a channel and it's always
+                // the start of a commercial.
+                const more = Math.max(0, filler.duration - fillerstart - 15000 - SLACK);
                 fillerstart += random.integer(0, more);
             }
             lineup.push({
@@ -147,9 +141,9 @@ function createLineup(obj, channel, fillers, isFirst) {
         }
         // pick the offline screen
         remaining = Math.min(remaining, 10 * 60 * 1000);
-        //don't display the offline screen for longer than 10 minutes. Maybe the
-        //channel's admin might change the schedule during that time and then
-        //it would be better to start playing the content.
+        // don't display the offline screen for longer than 10 minutes. Maybe the
+        // channel's admin might change the schedule during that time and then
+        // it would be better to start playing the content.
         lineup.push({
             type: "offline",
             title: "Channel Offline",
@@ -160,7 +154,7 @@ function createLineup(obj, channel, fillers, isFirst) {
         });
         return lineup;
     }
-    let originalTimeElapsed = timeElapsed;
+    const originalTimeElapsed = timeElapsed;
     if (timeElapsed < 30000) {
         timeElapsed = 0;
     }
@@ -194,7 +188,7 @@ function pickRandomWithMaxDuration(channel, fillers, maxDuration) {
     }
     let pick1 = null;
 
-    let t0 = new Date().getTime();
+    const t0 = new Date().getTime();
     let minimumWait = 1000000000;
     const D = 7 * 24 * 60 * 60 * 1000;
     const E = 5 * 60 * 60 * 1000;
@@ -209,24 +203,24 @@ function pickRandomWithMaxDuration(channel, fillers, maxDuration) {
         let n = 0;
 
         for (let i = 0; i < list.length; i++) {
-            let clip = list[i];
+            const clip = list[i];
             // a few extra milliseconds won't hurt anyone, would it? dun dun dun
             if (clip.duration <= maxDuration + SLACK) {
-                let t1 = channelCache.getProgramLastPlayTime(channel.number, clip);
+                const t1 = getProgramLastPlayTime(channel.number, clip);
                 let timeSince = t1 == 0 ? D : t0 - t1;
 
                 if (timeSince < channel.fillerRepeatCooldown - SLACK) {
-                    let w = channel.fillerRepeatCooldown - timeSince;
+                    const w = channel.fillerRepeatCooldown - timeSince;
                     if (clip.duration + w <= maxDuration + SLACK) {
                         minimumWait = Math.min(minimumWait, w);
                     }
                     timeSince = 0;
-                    //30 minutes is too little, don't repeat it at all
+                    // 30 minutes is too little, don't repeat it at all
                 } else if (!pickedList) {
-                    let t1 = channelCache.getFillerLastPlayTime(channel.number, fillers[j].id);
-                    let timeSince = t1 == 0 ? D : t0 - t1;
+                    const t1 = getFillerLastPlayTime(channel.number, fillers[j].id);
+                    const timeSince = t1 == 0 ? D : t0 - t1;
                     if (timeSince + SLACK >= fillers[j].cooldown) {
-                        //should we pick this list?
+                        // should we pick this list?
                         listM += fillers[j].weight;
                         if (weighedPick(fillers[j].weight, listM)) {
                             pickedList = true;
@@ -236,7 +230,7 @@ function pickRandomWithMaxDuration(channel, fillers, maxDuration) {
                             break;
                         }
                     } else {
-                        let w = fillers[j].cooldown - timeSince;
+                        const w = fillers[j].cooldown - timeSince;
                         if (clip.duration + w <= maxDuration + SLACK) {
                             minimumWait = Math.min(minimumWait, w);
                         }
@@ -247,9 +241,9 @@ function pickRandomWithMaxDuration(channel, fillers, maxDuration) {
                 if (timeSince <= 0) {
                     continue;
                 }
-                let s = norm_s(timeSince >= E ? E : timeSince);
-                let d = norm_d(clip.duration);
-                let w = s + d;
+                const s = norm_s(timeSince >= E ? E : timeSince);
+                const d = norm_d(clip.duration);
+                const w = s + d;
                 n += w;
                 if (weighedPick(w, n)) {
                     pick1 = clip;
@@ -276,7 +270,7 @@ function norm_d(x) {
     if (x >= 3.0) {
         x = 3.0 + Math.log(x);
     }
-    let y = 10000 * (Math.ceil(x * 1000) + 1);
+    const y = 10000 * (Math.ceil(x * 1000) + 1);
     return Math.ceil(y / 1000000) + 1;
 }
 
@@ -287,7 +281,7 @@ function norm_s(x) {
 }
 
 // any channel thing used here should be added to channel context
-function getWatermark(ffmpegSettings, channel, type) {
+export function getWatermark(ffmpegSettings, channel, type) {
     if (!ffmpegSettings.enableFFMPEGTranscoding || ffmpegSettings.disableChannelOverlay) {
         return null;
     }
@@ -315,7 +309,7 @@ function getWatermark(ffmpegSettings, channel, type) {
             return null;
         }
     }
-    let result = {
+    const result = {
         url: icon,
         width: watermark.width,
         verticalMargin: watermark.verticalMargin,
@@ -328,10 +322,10 @@ function getWatermark(ffmpegSettings, channel, type) {
     return result;
 }
 
-function generateChannelContext(channel) {
-    let channelContext = {};
+export function generateChannelContext(channel) {
+    const channelContext = {};
     for (let i = 0; i < CHANNEL_CONTEXT_KEYS.length; i++) {
-        let key = CHANNEL_CONTEXT_KEYS[i];
+        const key = CHANNEL_CONTEXT_KEYS[i];
 
         if (typeof channel[key] !== "undefined") {
             channelContext[key] = JSON.parse(JSON.stringify(channel[key]));

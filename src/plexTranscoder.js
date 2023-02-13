@@ -1,6 +1,6 @@
-const { v4: uuidv4 } = require("uuid");
-const axios = require("axios");
-const fs = require("fs");
+import { v4 as uuidv4 } from "uuid";
+import { get, post } from "axios";
+import { access, F_OK } from "fs";
 
 class PlexTranscoder {
     constructor(clientId, server, settings, channel, lineupItem) {
@@ -88,7 +88,7 @@ class PlexTranscoder {
             await this.getDecision(stream.directPlay);
             stream.streamUrl = this.settings.streamPath === "direct" ? this.file : this.plexFile;
             if (this.settings.streamPath === "direct") {
-                fs.access(this.file, fs.F_OK, (err) => {
+                access(this.file, F_OK, (err) => {
                     if (err) {
                         throw Error("Can't access this file", err);
                         return;
@@ -108,7 +108,7 @@ class PlexTranscoder {
             await this.getDecision(stream.directPlay);
             stream.streamUrl = `${this.transcodeUrlBase}${this.transcodingArgs}`;
         } else {
-            //This case sounds complex. Apparently plex is sending us just the audio, so we would need to get the video in a separate stream.
+            // This case sounds complex. Apparently plex is sending us just the audio, so we would need to get the video in a separate stream.
             this.log("Decision: Direct stream. Audio is being transcoded");
             stream.separateVideoStream = this.settings.streamPath === "direct" ? this.file : this.plexFile;
             stream.streamUrl = `${this.transcodeUrlBase}${this.transcodingArgs}`;
@@ -126,21 +126,21 @@ class PlexTranscoder {
     }
 
     setTranscodingArgs(directPlay, directStream, deinterlace, audioOnly) {
-        let resolution = directStream ? this.settings.maxPlayableResolution : this.settings.maxTranscodeResolution;
-        let bitrate = directStream ? this.settings.directStreamBitrate : this.settings.transcodeBitrate;
-        let mediaBufferSize = directStream ? this.settings.mediaBufferSize : this.settings.transcodeMediaBufferSize;
-        let subtitles = this.settings.enableSubtitles ? "burn" : "none"; // subtitle options: burn, none, embedded, sidecar
-        let streamContainer = "mpegts"; // Other option is mkv, mkv has the option of copying it's subs for later processing
-        let isDirectPlay = directPlay ? "1" : "0";
-        let hasMDE = "1";
+        const resolution = directStream ? this.settings.maxPlayableResolution : this.settings.maxTranscodeResolution;
+        const bitrate = directStream ? this.settings.directStreamBitrate : this.settings.transcodeBitrate;
+        const mediaBufferSize = directStream ? this.settings.mediaBufferSize : this.settings.transcodeMediaBufferSize;
+        const subtitles = this.settings.enableSubtitles ? "burn" : "none"; // subtitle options: burn, none, embedded, sidecar
+        const streamContainer = "mpegts"; // Other option is mkv, mkv has the option of copying it's subs for later processing
+        const isDirectPlay = directPlay ? "1" : "0";
+        const hasMDE = "1";
 
-        let videoQuality = `100`; // Not sure how this applies, maybe this works if maxVideoBitrate is not set
-        let profileName = `Generic`; // Blank profile, everything is specified through X-Plex-Client-Profile-Extra
+        const videoQuality = `100`; // Not sure how this applies, maybe this works if maxVideoBitrate is not set
+        const profileName = `Generic`; // Blank profile, everything is specified through X-Plex-Client-Profile-Extra
 
-        let resolutionArr = resolution.split("x");
+        const resolutionArr = resolution.split("x");
 
         let vc = this.settings.videoCodecs;
-        //This codec is not currently supported by plex so requesting it to transcode will always
+        // This codec is not currently supported by plex so requesting it to transcode will always
         // cause an error. If Plex ever supports av1, remove this. I guess.
         if (vc != "") {
             vc += ",av1";
@@ -175,7 +175,7 @@ add-limitation(scope=videoCodec&scopeName=*&type=upperBound&name=video.height&va
             clientProfile += `+add-limitation(scope=videoCodec&scopeName=*&type=notMatch&name=video.scanType&value=interlaced)`;
         }
 
-        let clientProfile_enc = encodeURIComponent(clientProfile);
+        const clientProfile_enc = encodeURIComponent(clientProfile);
         this.transcodingArgs = `X-Plex-Platform=${profileName}&\
 X-Plex-Product=${this.product}&\
 X-Plex-Client-Platform=${profileName}&\
@@ -239,9 +239,9 @@ lang=en`;
     }
 
     getVideoStats() {
-        let ret = {};
+        const ret = {};
         try {
-            let streams = this.decisionJson.MediaContainer.Metadata[0].Media[0].Part[0].Stream;
+            const streams = this.decisionJson.MediaContainer.Metadata[0].Media[0].Part[0].Stream;
             ret.duration = parseFloat(this.decisionJson.MediaContainer.Metadata[0].Media[0].Part[0].duration);
             streams.forEach(
                 function (_stream, $index) {
@@ -253,7 +253,7 @@ lang=en`;
                         }
                         ret.anamorphic = stream.anamorphic === "1" || stream.anamorphic === true;
                         if (ret.anamorphic) {
-                            let parsed = parsePixelAspectRatio(stream.pixelAspectRatio);
+                            const parsed = parsePixelAspectRatio(stream.pixelAspectRatio);
                             if (isNaN(parsed.p) || isNaN(parsed.q)) {
                                 throw Error("isNaN");
                             }
@@ -300,14 +300,13 @@ lang=en`;
     async getAudioIndex() {
         let index = "a";
 
-        await axios
-            .get(`${this.server.uri}${this.key}?X-Plex-Token=${this.server.accessToken}`, {
-                headers: { Accept: "application/json" },
-            })
+        await get(`${this.server.uri}${this.key}?X-Plex-Token=${this.server.accessToken}`, {
+            headers: { Accept: "application/json" },
+        })
             .then((res) => {
                 this.log(res.data);
                 try {
-                    let streams = res.data.MediaContainer.Metadata[0].Media[0].Part[0].Stream;
+                    const streams = res.data.MediaContainer.Metadata[0].Media[0].Part[0].Stream;
 
                     streams.forEach(function (stream) {
                         // Audio. Only look at stream being used
@@ -329,12 +328,12 @@ lang=en`;
     }
 
     async getDirectInfo() {
-        return (await axios.get(this.metadataPath)).data;
+        return (await get(this.metadataPath)).data;
     }
 
     async getDecisionUnmanaged(directPlay) {
-        let url = `${this.server.uri}/video/:/transcode/universal/decision?${this.transcodingArgs}`;
-        let res = await axios.get(url, {
+        const url = `${this.server.uri}/video/:/transcode/universal/decision?${this.transcodingArgs}`;
+        const res = await get(url, {
             headers: { Accept: "application/json" },
         });
         this.decisionJson = res.data;
@@ -349,7 +348,7 @@ lang=en`;
             return;
         }
 
-        let transcodeDecisionCode = res.data.MediaContainer.transcodeDecisionCode;
+        const transcodeDecisionCode = res.data.MediaContainer.transcodeDecisionCode;
         if (typeof transcodeDecisionCode === "undefined") {
             this.decisionJson.MediaContainer.transcodeDecisionCode = "novideo";
             this.log("Strange case, attempt direct play");
@@ -362,17 +361,17 @@ lang=en`;
     async tryToDetectAudioOnly() {
         try {
             this.log("Try to detect audio only:");
-            let url = `${this.server.uri}${this.key}?${this.transcodingArgs}`;
-            let res = await axios.get(url, {
+            const url = `${this.server.uri}${this.key}?${this.transcodingArgs}`;
+            const res = await get(url, {
                 headers: { Accept: "application/json" },
             });
 
-            let mediaContainer = res.data.MediaContainer;
-            let metadata = getOneOrUndefined(mediaContainer, "Metadata");
+            const mediaContainer = res.data.MediaContainer;
+            const metadata = getOneOrUndefined(mediaContainer, "Metadata");
             if (typeof metadata !== "undefined") {
                 this.albumArt.path = `${this.server.uri}${metadata.thumb}?X-Plex-Token=${this.server.accessToken}`;
 
-                let media = getOneOrUndefined(metadata, "Media");
+                const media = getOneOrUndefined(metadata, "Media");
                 if (typeof media !== "undefined") {
                     if (typeof media.videoCodec === "undefined") {
                         this.log("Audio-only file detected");
@@ -394,12 +393,12 @@ lang=en`;
     }
 
     getStatusUrl() {
-        let profileName = `Generic`;
+        const profileName = `Generic`;
 
-        let containerKey = `/video/:/transcode/universal/decision?${this.transcodingArgs}`;
-        let containerKey_enc = encodeURIComponent(containerKey);
+        const containerKey = `/video/:/transcode/universal/decision?${this.transcodingArgs}`;
+        const containerKey_enc = encodeURIComponent(containerKey);
 
-        let statusUrl = `${this.server.uri}/:/timeline?\
+        const statusUrl = `${this.server.uri}/:/timeline?\
 containerKey=${containerKey_enc}&\
 ratingKey=${this.ratingKey}&\
 state=${this.playState}&\
@@ -439,7 +438,7 @@ X-Plex-Token=${this.server.accessToken}`;
         this.log("Updating plex status");
         const statusUrl = this.getStatusUrl();
         try {
-            axios.post(statusUrl);
+            post(statusUrl);
         } catch (error) {
             this.log(`Problem updating Plex status using status URL ${statusUrl}:`);
             this.log(error);
@@ -460,7 +459,7 @@ X-Plex-Token=${this.server.accessToken}`;
 }
 
 function parsePixelAspectRatio(s) {
-    let x = s.split(":");
+    const x = s.split(":");
     return {
         p: parseInt(x[0], 10),
         q: parseInt(x[1], 10),
@@ -474,11 +473,11 @@ function getOneOrUndefined(object, field) {
     if (typeof object[field] === "undefined") {
         return undefined;
     }
-    let x = object[field];
+    const x = object[field];
     if (x.length < 1) {
         return undefined;
     }
     return x[0];
 }
 
-module.exports = PlexTranscoder;
+export default PlexTranscoder;

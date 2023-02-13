@@ -1,6 +1,6 @@
-const path = require("path");
-const { v4: uuidv4 } = require("uuid");
-let fs = require("fs");
+import { join, basename, extname } from "path";
+import { v4 as uuidv4 } from "uuid";
+import { readFile, writeFile, unlink, readdir } from "fs";
 
 class FillerDB {
     constructor(folder, channelService) {
@@ -10,15 +10,15 @@ class FillerDB {
     }
 
     async $loadFiller(id) {
-        let f = path.join(this.folder, `${id}.json`);
+        const f = join(this.folder, `${id}.json`);
         try {
             return await new Promise((resolve, reject) => {
-                fs.readFile(f, (err, data) => {
+                readFile(f, (err, data) => {
                     if (err) {
                         return reject(err);
                     }
                     try {
-                        let j = JSON.parse(data);
+                        const j = JSON.parse(data);
                         j.id = id;
                         resolve(j);
                     } catch (err) {
@@ -43,19 +43,19 @@ class FillerDB {
         if (typeof id === "undefined") {
             throw Error("Mising filler id");
         }
-        let f = path.join(this.folder, `${id}.json`);
+        const f = join(this.folder, `${id}.json`);
         try {
             await new Promise((resolve, reject) => {
                 let data = undefined;
                 try {
-                    //id is determined by the file name, not the contents
+                    // id is determined by the file name, not the contents
                     fixup(json);
                     delete json.id;
                     data = JSON.stringify(json);
                 } catch (err) {
                     return reject(err);
                 }
-                fs.writeFile(f, data, (err) => {
+                writeFile(f, data, (err) => {
                     if (err) {
                         return reject(err);
                     }
@@ -68,20 +68,20 @@ class FillerDB {
     }
 
     async createFiller(json) {
-        let id = uuidv4();
+        const id = uuidv4();
         fixup(json);
         await this.saveFiller(id, json);
         return id;
     }
 
     async getFillerChannels(id) {
-        let numbers = await this.channelService.getAllChannelNumbers();
-        let channels = [];
+        const numbers = await this.channelService.getAllChannelNumbers();
+        const channels = [];
         await Promise.all(
             numbers.map(async (number) => {
                 let ch = await this.channelService.getChannel(number);
-                let name = ch.name;
-                let fillerCollections = ch.fillerCollections;
+                const name = ch.name;
+                const fillerCollections = ch.fillerCollections;
                 for (let i = 0; i < fillerCollections.length; i++) {
                     if (fillerCollections[i].id === id) {
                         channels.push({
@@ -99,11 +99,11 @@ class FillerDB {
 
     async deleteFiller(id) {
         try {
-            let channels = await this.getFillerChannels(id);
+            const channels = await this.getFillerChannels(id);
             await Promise.all(
                 channels.map(async (channel) => {
                     console.log(`Updating channel ${channel.number} , remove filler: ${id}`);
-                    let json = await channelService.getChannel(channel.number);
+                    const json = await channelService.getChannel(channel.number);
                     json.fillerCollections = json.fillerCollections.filter((col) => {
                         return col.id != id;
                     });
@@ -111,9 +111,9 @@ class FillerDB {
                 }),
             );
 
-            let f = path.join(this.folder, `${id}.json`);
+            const f = join(this.folder, `${id}.json`);
             await new Promise((resolve, reject) => {
-                fs.unlink(f, function (err) {
+                unlink(f, function (err) {
                     if (err) {
                         return reject(err);
                     }
@@ -127,15 +127,15 @@ class FillerDB {
 
     async getAllFillerIds() {
         return await new Promise((resolve, reject) => {
-            fs.readdir(this.folder, function (err, items) {
+            readdir(this.folder, function (err, items) {
                 if (err) {
                     return reject(err);
                 }
-                let fillerIds = [];
+                const fillerIds = [];
                 for (let i = 0; i < items.length; i++) {
-                    let name = path.basename(items[i]);
-                    if (path.extname(name) === ".json") {
-                        let id = name.slice(0, -5);
+                    const name = basename(items[i]);
+                    if (extname(name) === ".json") {
+                        const id = name.slice(0, -5);
                         fillerIds.push(id);
                     }
                 }
@@ -145,13 +145,13 @@ class FillerDB {
     }
 
     async getAllFillers() {
-        let ids = await this.getAllFillerIds();
+        const ids = await this.getAllFillerIds();
         return await Promise.all(ids.map(async (c) => this.getFiller(c)));
     }
 
     async getAllFillersInfo() {
-        //returns just name and id
-        let fillers = await this.getAllFillers();
+        // returns just name and id
+        const fillers = await this.getAllFillers();
         return fillers.map((f) => {
             return {
                 id: f.id,
@@ -166,10 +166,10 @@ class FillerDB {
         if (typeof channel.fillerCollections !== "undefined") {
             f = channel.fillerContent;
         }
-        let loadChannelFiller = async (fillerEntry) => {
+        const loadChannelFiller = async (fillerEntry) => {
             let content = [];
             try {
-                let filler = await this.getFiller(fillerEntry.id);
+                const filler = await this.getFiller(fillerEntry.id);
                 content = filler.content;
             } catch (e) {
                 console.error(
@@ -196,4 +196,4 @@ function fixup(json) {
     }
 }
 
-module.exports = FillerDB;
+export default FillerDB;

@@ -17,8 +17,8 @@
  * but with time it will be worth it, really.
  *
  ***/
-const path = require("path");
-var fs = require("fs");
+import { join, extname, resolve } from "path";
+import { writeFileSync, readdirSync, readFileSync, existsSync, renameSync } from "fs";
 
 const TARGET_VERSION = 803;
 
@@ -45,13 +45,13 @@ const STEPS = [
     [802, 803, () => fixNonIntegerDurations()],
 ];
 
-const { v4: uuidv4 } = require("uuid");
+import { v4 as uuidv4 } from "uuid";
 
 function createDeviceId(db) {
-    let deviceId = db["client-id"].find();
+    const deviceId = db["client-id"].find();
     if (deviceId.length == 0) {
-        let clientId = uuidv4().replace(/-/g, "").slice(0, 16) + "-org-dizquetv-" + process.platform;
-        let dev = {
+        const clientId = uuidv4().replace(/-/g, "").slice(0, 16) + "-org-dizquetv-" + process.platform;
+        const dev = {
             clientId: clientId,
         };
         db["client-id"].save(dev);
@@ -70,15 +70,15 @@ function appNameChange(db) {
 }
 
 function basicDB(db) {
-    //this one should either try recovering the db from a very old version
-    //or buildl a completely empty db at version 0
-    let ffmpegSettings = db["ffmpeg-settings"].find();
-    let plexSettings = db["plex-settings"].find();
+    // this one should either try recovering the db from a very old version
+    // or buildl a completely empty db at version 0
+    const ffmpegSettings = db["ffmpeg-settings"].find();
+    const plexSettings = db["plex-settings"].find();
 
-    var ffmpegRepaired = repairFFmpeg0(ffmpegSettings);
+    const ffmpegRepaired = repairFFmpeg0(ffmpegSettings);
     if (ffmpegRepaired.hasBeenRepaired) {
-        var fixed = ffmpegRepaired.fixedConfig;
-        var i = fixed._id;
+        const fixed = ffmpegRepaired.fixedConfig;
+        const i = fixed._id;
         if (i == null || typeof i == "undefined") {
             db["ffmpeg-settings"].save(fixed);
         } else {
@@ -109,13 +109,13 @@ function basicDB(db) {
             pathReplaceWith: "",
         });
     }
-    let plexServers = db["plex-servers"].find();
-    //plex servers exist, but they could be old
-    let newPlexServers = {};
+    const plexServers = db["plex-servers"].find();
+    // plex servers exist, but they could be old
+    const newPlexServers = {};
     for (let i = 0; i < plexServers.length; i++) {
-        let plex = plexServers[i];
+        const plex = plexServers[i];
         if (typeof plex.connections === "undefined" || plex.connections.length == 0) {
-            let newPlex = attemptMigratePlexFrom51(plex);
+            const newPlex = attemptMigratePlexFrom51(plex);
             newPlexServers[plex.name] = newPlex;
             db["plex-servers"].update({ _id: plex._id }, newPlex);
         }
@@ -124,7 +124,7 @@ function basicDB(db) {
         migrateChannelsFrom51(db, newPlexServers);
     }
 
-    let xmltvSettings = db["xmltv-settings"].find();
+    const xmltvSettings = db["xmltv-settings"].find();
     if (xmltvSettings.length === 0) {
         db["xmltv-settings"].save({
             cache: 12,
@@ -132,7 +132,7 @@ function basicDB(db) {
             file: `${process.env.DATABASE}/xmltv.xml`,
         });
     }
-    let hdhrSettings = db["hdhr-settings"].find();
+    const hdhrSettings = db["hdhr-settings"].find();
     if (hdhrSettings.length === 0) {
         db["hdhr-settings"].save({
             tunerCount: 2,
@@ -143,10 +143,10 @@ function basicDB(db) {
 
 function migrateChannelsFrom51(db, newPlexServers) {
     console.log("Attempting to migrate channels from old format. This may take a while...");
-    let channels = db["channels"].find();
+    const channels = db["channels"].find();
     function fix(program) {
         if (typeof program.plexFile === "undefined") {
-            let file = program.file;
+            const file = program.file;
             program.plexFile = file.slice(program.server.uri.length);
             let i = 0;
             while (i < program.plexFile.length && program.plexFile.charAt(i) != "?") {
@@ -157,9 +157,9 @@ function migrateChannelsFrom51(db, newPlexServers) {
         }
     }
     for (let i = 0; i < channels.length; i++) {
-        let channel = channels[i];
-        let programs = channel.programs;
-        let newPrograms = [];
+        const channel = channels[i];
+        const programs = channel.programs;
+        const newPrograms = [];
         for (let j = 0; j < programs.length; j++) {
             let program = programs[j];
             if (
@@ -167,7 +167,7 @@ function migrateChannelsFrom51(db, newPlexServers) {
                 typeof program.server.name === "undefined" ||
                 (typeof program.plexFile === "undefined" && typeof program.file === "undefined")
             ) {
-                let duration = program.duration;
+                const duration = program.duration;
                 if (typeof duration !== "undefined") {
                     console.log(
                         `A program in channel ${channel.number} doesn't have server/plex file information. Replacing it with Flex time`,
@@ -192,9 +192,9 @@ function migrateChannelsFrom51(db, newPlexServers) {
                 if (typeof commercials === "undefined" || commercials.length == 0) {
                     commercials = [];
                 }
-                let newCommercials = [];
+                const newCommercials = [];
                 for (let k = 0; k < commercials.length; k++) {
-                    let commercial = commercials[k];
+                    const commercial = commercials[k];
                     if (
                         typeof commercial.server === "undefined" ||
                         typeof commercial.server.name === "undefined" ||
@@ -223,11 +223,11 @@ function migrateChannelsFrom51(db, newPlexServers) {
 
 function attemptMigratePlexFrom51(plex) {
     console.log("Attempting to migrate existing Plex server: " + plex.name + "...");
-    let u = "unknown(migrated from 0.0.51)";
-    //most of the new variables aren't really necessary so it doesn't matter
-    //to replace them with placeholders
-    let uri = plex.protocol + "://" + plex.host + ":" + plex.port;
-    let newPlex = {
+    const u = "unknown(migrated from 0.0.51)";
+    // most of the new variables aren't really necessary so it doesn't matter
+    // to replace them with placeholders
+    const uri = plex.protocol + "://" + plex.host + ":" + plex.port;
+    const newPlex = {
         name: plex.name,
         product: "Plex Media Server",
         productVersion: u,
@@ -275,26 +275,26 @@ function attemptMigratePlexFrom51(plex) {
 }
 
 function commercialsRemover(db) {
-    let getKey = (program) => {
-        let key = program.key;
+    const getKey = (program) => {
+        const key = program.key;
         return typeof key === "undefined" ? "?" : key;
     };
 
-    let channels = db["channels"].find();
+    const channels = db["channels"].find();
     for (let i = 0; i < channels.length; i++) {
-        let channel = channels[i];
-        let fixedPrograms = [];
+        const channel = channels[i];
+        const fixedPrograms = [];
         let fixedFiller = channel.fillerContent;
         if (typeof fixedFiller === "undefined") {
             fixedFiller = [];
         }
         let addedFlex = false;
-        let seenPrograms = {};
+        const seenPrograms = {};
         for (let i = 0; i < fixedFiller.length; i++) {
             seenPrograms[getKey(fixedFiller[i])] = true;
         }
         for (let j = 0; j < channel.programs.length; j++) {
-            let fixedProgram = channel.programs[j];
+            const fixedProgram = channel.programs[j];
             let commercials = fixedProgram.commercials;
             if (typeof commercials == "undefined") {
                 commercials = [];
@@ -306,7 +306,7 @@ function commercialsRemover(db) {
                     fixedFiller.push(commercials[k]);
                 }
             }
-            let diff = fixedProgram.duration - fixedProgram.actualDuration;
+            const diff = fixedProgram.duration - fixedProgram.actualDuration;
             fixedProgram.duration = fixedProgram.actualDuration;
             fixedPrograms.push(fixedProgram);
             if (diff > 0) {
@@ -320,9 +320,9 @@ function commercialsRemover(db) {
         }
         channel.programs = fixedPrograms;
         channel.fillerContent = fixedFiller;
-        //TODO: maybe remove duplicates?
+        // TODO: maybe remove duplicates?
         if (addedFlex) {
-            //fill up some flex settings just in case
+            // fill up some flex settings just in case
             if (typeof channel.fillerRepeatCooldown === "undefined") {
                 channel.fillerRepeatCooldown = 10 * 60 * 1000;
             }
@@ -347,7 +347,7 @@ function commercialsRemover(db) {
     }
 }
 
-function initDB(db, channelDB, dir) {
+export function initDB(db, channelDB, dir) {
     if (typeof channelDB === "undefined") {
         throw Error("???");
     }
@@ -388,7 +388,7 @@ function initDB(db, channelDB, dir) {
 
 function ffmpeg() {
     return {
-        //How default ffmpeg settings should look
+        // How default ffmpeg settings should look
         configVersion: 5,
         ffmpegPath: "/usr/bin/ffmpeg",
         threads: 4,
@@ -417,14 +417,14 @@ function ffmpeg() {
     };
 }
 
-//This initializes ffmpeg config for db version 0
-//there used to be a concept of configVersion which worked like this database
-//migration thing but only for settings. Nowadays that sort of migration should
-//be done at a db-version level.
+// This initializes ffmpeg config for db version 0
+// there used to be a concept of configVersion which worked like this database
+// migration thing but only for settings. Nowadays that sort of migration should
+// be done at a db-version level.
 function repairFFmpeg0(existingConfigs) {
-    var hasBeenRepaired = false;
-    var currentConfig = {};
-    var _id = null;
+    let hasBeenRepaired = false;
+    let currentConfig = {};
+    let _id = null;
     if (existingConfigs.length === 0) {
         currentConfig = {};
     } else {
@@ -437,21 +437,21 @@ function repairFFmpeg0(existingConfigs) {
         currentConfig._id = _id;
     }
     if (currentConfig.configVersion == 3) {
-        //migrate from version 3 to 4
+        // migrate from version 3 to 4
         hasBeenRepaired = true;
-        //new settings:
+        // new settings:
         currentConfig.audioBitrate = 192;
         currentConfig.audioBufSize = 50;
         currentConfig.audioChannels = 2;
         currentConfig.audioSampleRate = 48;
-        //this one has been renamed:
+        // this one has been renamed:
         currentConfig.normalizeAudio = currentConfig.alignAudio;
         currentConfig.configVersion = 4;
     }
     if (currentConfig.configVersion == 4) {
-        //migrate from version 4 to 5
+        // migrate from version 4 to 5
         hasBeenRepaired = true;
-        //new settings:
+        // new settings:
         currentConfig.enableFFMPEGTranscoding = true;
         currentConfig.normalizeVideoCodec = true;
         currentConfig.normalizeAudioCodec = true;
@@ -468,25 +468,25 @@ function repairFFmpeg0(existingConfigs) {
 
 function splitServersSingleChannels(db, channelDB) {
     console.log("Migrating channels and plex servers so that plex servers are no longer embedded in program data");
-    let servers = db["plex-servers"].find();
-    let serverCache = {};
-    let serverNames = {};
-    let newServers = [];
+    const servers = db["plex-servers"].find();
+    const serverCache = {};
+    const serverNames = {};
+    const newServers = [];
 
-    let getServerKey = (uri, accessToken) => {
+    const getServerKey = (uri, accessToken) => {
         return uri + "|" + accessToken;
     };
 
-    let getNewName = (name) => {
+    const getNewName = (name) => {
         if (typeof name === "undefined" || typeof serverNames[name] !== "undefined") {
-            //recurse because what if some genius actually named their server plex#3 ?
+            // recurse because what if some genius actually named their server plex#3 ?
             name = getNewName("plex#" + (Object.keys(serverNames).length + 1));
         }
         serverNames[name] = true;
         return name;
     };
 
-    let saveServer = (name, uri, accessToken, arGuide, arChannels) => {
+    const saveServer = (name, uri, accessToken, arGuide, arChannels) => {
         if (typeof arGuide === "undefined") {
             arGuide = false;
         }
@@ -496,7 +496,7 @@ function splitServersSingleChannels(db, channelDB) {
         if (uri.endsWith("/")) {
             uri = uri.slice(0, -1);
         }
-        let key = getServerKey(uri, accessToken);
+        const key = getServerKey(uri, accessToken);
         if (typeof serverCache[key] === "undefined") {
             serverCache[key] = getNewName(name);
             console.log(
@@ -514,11 +514,11 @@ function splitServersSingleChannels(db, channelDB) {
         return serverCache[key];
     };
     for (let i = 0; i < servers.length; i++) {
-        let server = servers[i];
+        const server = servers[i];
         saveServer(server.name, server.uri, server.accessToken, server.arGuide, server.arChannels);
     }
 
-    let cleanupProgram = (program) => {
+    const cleanupProgram = (program) => {
         delete program.actualDuration;
         delete program.commercials;
         delete program.durationStr;
@@ -528,21 +528,21 @@ function splitServersSingleChannels(db, channelDB) {
         delete program.opts;
     };
 
-    let fixProgram = (program) => {
-        //Also remove the "actualDuration" and "commercials" fields.
+    const fixProgram = (program) => {
+        // Also remove the "actualDuration" and "commercials" fields.
         try {
             cleanupProgram(program);
             if (program.isOffline) {
                 return program;
             }
-            let newProgram = JSON.parse(JSON.stringify(program));
-            let s = newProgram.server;
+            const newProgram = JSON.parse(JSON.stringify(program));
+            const s = newProgram.server;
             delete newProgram.server;
-            let name = saveServer(undefined, s.uri, s.accessToken, undefined, undefined);
+            const name = saveServer(undefined, s.uri, s.accessToken, undefined, undefined);
             if (typeof name === "undefined") {
                 throw Error("Unable to find server name");
             }
-            //console.log(newProgram.title + " : " + name);
+            // console.log(newProgram.title + " : " + name);
             newProgram.serverKey = name;
             return newProgram;
         } catch (err) {
@@ -554,14 +554,14 @@ function splitServersSingleChannels(db, channelDB) {
         }
     };
 
-    let fixChannel = (channel) => {
+    const fixChannel = (channel) => {
         console.log("Migrating channel: " + channel.name + " " + channel.number);
         for (let i = 0; i < channel.programs.length; i++) {
             channel.programs[i] = fixProgram(channel.programs[i]);
         }
-        //if (channel.programs.length > 10) {
-        //channel.programs = channel.programs.slice(0, 10);
-        //}
+        // if (channel.programs.length > 10) {
+        // channel.programs = channel.programs.slice(0, 10);
+        // }
         channel.duration = 0;
         for (let i = 0; i < channel.programs.length; i++) {
             channel.duration += channel.programs[i].duration;
@@ -581,18 +581,18 @@ function splitServersSingleChannels(db, channelDB) {
         return channel;
     };
 
-    let channels = db["channels"].find();
+    const channels = db["channels"].find();
     for (let i = 0; i < channels.length; i++) {
         channels[i] = fixChannel(channels[i]);
     }
 
     console.log("Done migrating channels for this step. Saving updates to storage...");
 
-    //wipe out servers
+    // wipe out servers
     for (let i = 0; i < servers.length; i++) {
         db["plex-servers"].remove({ _id: servers[i]._id });
     }
-    //wipe out old channels
+    // wipe out old channels
     db["channels"].remove();
     // insert all over again
     if (newServers.length > 0) {
@@ -605,11 +605,11 @@ function splitServersSingleChannels(db, channelDB) {
 }
 
 function fixCorruptedServer(db) {
-    let arr = db["plex-servers"].find();
-    let servers = [];
+    const arr = db["plex-servers"].find();
+    const servers = [];
     let badFound = false;
     for (let i = 0; i < arr.length; i++) {
-        let server = arr[i];
+        const server = arr[i];
         if (typeof server.name === "undefined" && server.length == 0) {
             badFound = true;
             console.log("Found a corrupted plex server. And that's why 63 is a bad version. BAD");
@@ -619,19 +619,19 @@ function fixCorruptedServer(db) {
     }
     if (badFound) {
         console.log("Fixing the plex-server.json...");
-        let f = path.join(process.env.DATABASE, `plex-servers.json`);
-        fs.writeFileSync(f, JSON.stringify(servers));
+        const f = join(process.env.DATABASE, `plex-servers.json`);
+        writeFileSync(f, JSON.stringify(servers));
     }
 }
 
 function extractFillersFromChannels() {
     console.log("Extracting fillers from channels...");
-    let channels = path.join(process.env.DATABASE, "channels");
-    let fillers = path.join(process.env.DATABASE, "filler");
-    let channelFiles = fs.readdirSync(channels);
-    let usedNames = {};
+    const channels = join(process.env.DATABASE, "channels");
+    const fillers = join(process.env.DATABASE, "filler");
+    const channelFiles = readdirSync(channels);
+    const usedNames = {};
 
-    let getName = (channelName) => {
+    const getName = (channelName) => {
         let i = -1;
         let x = channelName;
         while (typeof usedNames[x] !== "undefined") {
@@ -641,24 +641,24 @@ function extractFillersFromChannels() {
         return x;
     };
 
-    let saveFiller = (arr, channelName) => {
-        let id = uuidv4();
-        let name = getName(`Filler - ${channelName}`);
+    const saveFiller = (arr, channelName) => {
+        const id = uuidv4();
+        const name = getName(`Filler - ${channelName}`);
         usedNames[name] = true;
-        let fillerPath = path.join(fillers, id + ".json");
-        let filler = {
+        const fillerPath = join(fillers, id + ".json");
+        const filler = {
             name: name,
             content: arr,
         };
-        fs.writeFileSync(fillerPath, JSON.stringify(filler), "utf-8");
+        writeFileSync(fillerPath, JSON.stringify(filler), "utf-8");
         return id;
     };
 
     for (let i = 0; i < channelFiles.length; i++) {
-        if (path.extname(channelFiles[i]) === ".json") {
+        if (extname(channelFiles[i]) === ".json") {
             console.log("Migrating filler in channel : " + channelFiles[i] + "...");
-            let channelPath = path.join(channels, channelFiles[i]);
-            let channel = JSON.parse(fs.readFileSync(channelPath, "utf-8"));
+            const channelPath = join(channels, channelFiles[i]);
+            const channel = JSON.parse(readFileSync(channelPath, "utf-8"));
             let fillerId = null;
             if (typeof channel.fillerContent !== "undefined" && channel.fillerContent.length != 0) {
                 fillerId = saveFiller(channel.fillerContent, channel.name);
@@ -675,26 +675,26 @@ function extractFillersFromChannels() {
             } else {
                 channel.fillerCollections = [];
             }
-            fs.writeFileSync(channelPath, JSON.stringify(channel), "utf-8");
+            writeFileSync(channelPath, JSON.stringify(channel), "utf-8");
         }
     }
     console.log("Done extracting fillers from channels.");
 }
 
 function addFPS(db) {
-    let ffmpegSettings = db["ffmpeg-settings"].find()[0];
-    let f = path.join(process.env.DATABASE, "ffmpeg-settings.json");
+    const ffmpegSettings = db["ffmpeg-settings"].find()[0];
+    const f = join(process.env.DATABASE, "ffmpeg-settings.json");
     ffmpegSettings.maxFPS = 60;
-    fs.writeFileSync(f, JSON.stringify([ffmpegSettings]));
+    writeFileSync(f, JSON.stringify([ffmpegSettings]));
 }
 
 function migrateWatermark(db, channelDB) {
-    let ffmpegSettings = db["ffmpeg-settings"].find()[0];
+    const ffmpegSettings = db["ffmpeg-settings"].find()[0];
     let w = 1920;
     let h = 1080;
 
     function parseResolutionString(s) {
-        var i = s.indexOf("x");
+        let i = s.indexOf("x");
         if (i == -1) {
             i = s.indexOf("×");
             if (i == -1) {
@@ -712,7 +712,7 @@ function migrateWatermark(db, channelDB) {
         typeof ffmpegSettings.targetResolution !== "undefined" &&
         typeof ffmpegSettings.targetResolution !== ""
     ) {
-        let p = parseResolutionString(ffmpegSettings.targetResolution);
+        const p = parseResolutionString(ffmpegSettings.targetResolution);
         w = p.w;
         h = p.h;
     }
@@ -727,7 +727,7 @@ function migrateWatermark(db, channelDB) {
                 duration: channel.iconDuration,
                 fixedSize: false,
                 position: ["top-left", "top-right", "bottom-left", "bottom-right"][channel.iconPosition],
-                url: "", //same as channel icon
+                url: "", // same as channel icon
                 animated: false,
             };
         } else {
@@ -743,73 +743,73 @@ function migrateWatermark(db, channelDB) {
     }
 
     console.log("Migrating watermarks...");
-    let channels = path.join(process.env.DATABASE, "channels");
-    let channelFiles = fs.readdirSync(channels);
+    const channels = join(process.env.DATABASE, "channels");
+    const channelFiles = readdirSync(channels);
     for (let i = 0; i < channelFiles.length; i++) {
-        if (path.extname(channelFiles[i]) === ".json") {
+        if (extname(channelFiles[i]) === ".json") {
             console.log("Migrating watermark in channel : " + channelFiles[i] + "...");
-            let channelPath = path.join(channels, channelFiles[i]);
-            let channel = JSON.parse(fs.readFileSync(channelPath, "utf-8"));
+            const channelPath = join(channels, channelFiles[i]);
+            let channel = JSON.parse(readFileSync(channelPath, "utf-8"));
             channel = migrateChannel(channel);
-            fs.writeFileSync(channelPath, JSON.stringify(channel), "utf-8");
+            writeFileSync(channelPath, JSON.stringify(channel), "utf-8");
         }
     }
     console.log("Done migrating watermarks in channels.");
 }
 
 function addScalingAlgorithm(db) {
-    let ffmpegSettings = db["ffmpeg-settings"].find()[0];
-    let f = path.join(process.env.DATABASE, "ffmpeg-settings.json");
+    const ffmpegSettings = db["ffmpeg-settings"].find()[0];
+    const f = join(process.env.DATABASE, "ffmpeg-settings.json");
     ffmpegSettings.scalingAlgorithm = "bicubic";
-    fs.writeFileSync(f, JSON.stringify([ffmpegSettings]));
+    writeFileSync(f, JSON.stringify([ffmpegSettings]));
 }
 
 function moveBackup(path) {
-    if (fs.existsSync(`${process.env.DATABASE}${path}`)) {
+    if (existsSync(`${process.env.DATABASE}${path}`)) {
         let i = 0;
-        while (fs.existsSync(`${process.env.DATABASE}${path}.bak.${i}`)) {
+        while (existsSync(`${process.env.DATABASE}${path}.bak.${i}`)) {
             i++;
         }
-        fs.renameSync(`${process.env.DATABASE}${path}`, `${process.env.DATABASE}${path}.bak.${i}`);
+        renameSync(`${process.env.DATABASE}${path}`, `${process.env.DATABASE}${path}.bak.${i}`);
     }
 }
 
 function reAddIcon(dir) {
     moveBackup("/images/dizquetv.png");
-    let data = fs.readFileSync(path.resolve(path.join(dir, "resources/dizquetv.png")));
-    fs.writeFileSync(process.env.DATABASE + "/images/dizquetv.png", data);
+    let data = readFileSync(resolve(join(dir, "resources/dizquetv.png")));
+    writeFileSync(process.env.DATABASE + "/images/dizquetv.png", data);
 
-    if (fs.existsSync(`${process.env.DATABASE}/images/pseudotv.png`)) {
+    if (existsSync(`${process.env.DATABASE}/images/pseudotv.png`)) {
         moveBackup("/images/pseudotv.png");
-        let data = fs.readFileSync(path.resolve(path.join(dir, "resources/dizquetv.png")));
-        fs.writeFileSync(process.env.DATABASE + "/images/pseudotv.png", data);
+        const data = readFileSync(resolve(join(dir, "resources/dizquetv.png")));
+        writeFileSync(process.env.DATABASE + "/images/pseudotv.png", data);
     }
 
     moveBackup("/images/generic-error-screen.png");
-    data = fs.readFileSync(path.resolve(path.join(dir, "resources/generic-error-screen.png")));
-    fs.writeFileSync(process.env.DATABASE + "/images/generic-error-screen.png", data);
+    data = readFileSync(resolve(join(dir, "resources/generic-error-screen.png")));
+    writeFileSync(process.env.DATABASE + "/images/generic-error-screen.png", data);
 
     moveBackup("/images/generic-offline-screen.png");
-    data = fs.readFileSync(path.resolve(path.join(dir, "resources/generic-offline-screen.png")));
-    fs.writeFileSync(process.env.DATABASE + "/images/generic-offline-screen.png", data);
+    data = readFileSync(resolve(join(dir, "resources/generic-offline-screen.png")));
+    writeFileSync(process.env.DATABASE + "/images/generic-offline-screen.png", data);
 
     moveBackup("/images/loading-screen.png");
-    data = fs.readFileSync(path.resolve(path.join(dir, "resources/loading-screen.png")));
-    fs.writeFileSync(process.env.DATABASE + "/images/loading-screen.png", data);
+    data = readFileSync(resolve(join(dir, "resources/loading-screen.png")));
+    writeFileSync(process.env.DATABASE + "/images/loading-screen.png", data);
 }
 
 function addDeinterlaceFilter(db) {
-    let ffmpegSettings = db["ffmpeg-settings"].find()[0];
-    let f = path.join(process.env.DATABASE, "ffmpeg-settings.json");
+    const ffmpegSettings = db["ffmpeg-settings"].find()[0];
+    const f = join(process.env.DATABASE, "ffmpeg-settings.json");
     ffmpegSettings.deinterlaceFilter = "none";
-    fs.writeFileSync(f, JSON.stringify([ffmpegSettings]));
+    writeFileSync(f, JSON.stringify([ffmpegSettings]));
 }
 
 function addImageCache(db) {
-    let xmltvSettings = db["xmltv-settings"].find()[0];
-    let f = path.join(process.env.DATABASE, "xmltv-settings.json");
+    const xmltvSettings = db["xmltv-settings"].find()[0];
+    const f = join(process.env.DATABASE, "xmltv-settings.json");
     xmltvSettings.enableImageCache = false;
-    fs.writeFileSync(f, JSON.stringify([xmltvSettings]));
+    writeFileSync(f, JSON.stringify([xmltvSettings]));
 }
 
 function addGroupTitle() {
@@ -819,15 +819,15 @@ function addGroupTitle() {
     }
 
     console.log("Adding group title to channels...");
-    let channels = path.join(process.env.DATABASE, "channels");
-    let channelFiles = fs.readdirSync(channels);
+    const channels = join(process.env.DATABASE, "channels");
+    const channelFiles = readdirSync(channels);
     for (let i = 0; i < channelFiles.length; i++) {
-        if (path.extname(channelFiles[i]) === ".json") {
+        if (extname(channelFiles[i]) === ".json") {
             console.log("Adding group title to channel : " + channelFiles[i] + "...");
-            let channelPath = path.join(channels, channelFiles[i]);
-            let channel = JSON.parse(fs.readFileSync(channelPath, "utf-8"));
+            const channelPath = join(channels, channelFiles[i]);
+            let channel = JSON.parse(readFileSync(channelPath, "utf-8"));
             channel = migrateChannel(channel);
-            fs.writeFileSync(channelPath, JSON.stringify(channel), "utf-8");
+            writeFileSync(channelPath, JSON.stringify(channel), "utf-8");
         }
     }
     console.log("Done migrating group titles in channels.");
@@ -835,11 +835,11 @@ function addGroupTitle() {
 
 function fixNonIntegerDurations() {
     function migrateChannel(channel) {
-        let programs = channel.programs;
+        const programs = channel.programs;
         let fixedCount = 0;
         channel.duration = 0;
         for (let i = 0; i < programs.length; i++) {
-            let program = programs[i];
+            const program = programs[i];
             if (!Number.isInteger(program.duration)) {
                 fixedCount++;
                 program.duration = Math.ceil(program.duration);
@@ -860,24 +860,21 @@ function fixNonIntegerDurations() {
     }
 
     console.log("Checking channels to make sure they weren't corrupted by random slots bug #350...");
-    let channels = path.join(process.env.DATABASE, "channels");
-    let channelFiles = fs.readdirSync(channels);
+    const channels = join(process.env.DATABASE, "channels");
+    const channelFiles = readdirSync(channels);
     for (let i = 0; i < channelFiles.length; i++) {
-        if (path.extname(channelFiles[i]) === ".json") {
+        if (extname(channelFiles[i]) === ".json") {
             console.log("Checking durations in channel : " + channelFiles[i] + "...");
-            let channelPath = path.join(channels, channelFiles[i]);
-            let channel = JSON.parse(fs.readFileSync(channelPath, "utf-8"));
-            let { fixed, newChannel } = migrateChannel(channel);
+            const channelPath = join(channels, channelFiles[i]);
+            const channel = JSON.parse(readFileSync(channelPath, "utf-8"));
+            const { fixed, newChannel } = migrateChannel(channel);
 
             if (fixed) {
-                fs.writeFileSync(channelPath, JSON.stringify(newChannel), "utf-8");
+                writeFileSync(channelPath, JSON.stringify(newChannel), "utf-8");
             }
         }
     }
     console.log("Done checking channels.");
 }
 
-module.exports = {
-    initDB: initDB,
-    defaultFFMPEG: ffmpeg,
-};
+export const defaultFFMPEG = ffmpeg;

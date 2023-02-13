@@ -1,4 +1,4 @@
-//hmnn this is more of a "PlexServerService"...
+// hmnn this is more of a "PlexServerService"...
 const ICON_REGEX = /https?:\/\/.*(\/library\/metadata\/\d+\/thumb\/\d+).X-Plex-Token=.*/;
 
 const ICON_FIELDS = ["icon", "showIcon", "seasonIcon", "episodeIcon"];
@@ -14,18 +14,18 @@ class PlexServerDB {
     }
 
     async fixupAllChannels(name, newServer) {
-        let channelNumbers = await this.channelService.getAllChannelNumbers();
-        let report = await Promise.all(
+        const channelNumbers = await this.channelService.getAllChannelNumbers();
+        const report = await Promise.all(
             channelNumbers.map(async (i) => {
-                let channel = await this.channelService.getChannel(i);
-                let channelReport = {
+                const channel = await this.channelService.getChannel(i);
+                const channelReport = {
                     channelNumber: channel.number,
                     channelName: channel.name,
                     destroyedPrograms: 0,
                     modifiedPrograms: 0,
                 };
                 this.fixupProgramArray(channel.programs, name, newServer, channelReport);
-                //if fallback became offline, remove it
+                // if fallback became offline, remove it
                 if (
                     typeof channel.fallback !== "undefined" &&
                     channel.fallback.length > 0 &&
@@ -47,10 +47,10 @@ class PlexServerDB {
     }
 
     async fixupAllFillers(name, newServer) {
-        let fillers = await this.fillerDB.getAllFillers();
-        let report = await Promise.all(
+        const fillers = await this.fillerDB.getAllFillers();
+        const report = await Promise.all(
             fillers.map(async (filler) => {
-                let fillerReport = {
+                const fillerReport = {
                     channelNumber: "--",
                     channelName: filler.name + " (filler)",
                     destroyedPrograms: 0,
@@ -68,10 +68,10 @@ class PlexServerDB {
     }
 
     async fixupAllShows(name, newServer) {
-        let shows = await this.showDB.getAllShows();
-        let report = await Promise.all(
+        const shows = await this.showDB.getAllShows();
+        const report = await Promise.all(
             shows.map(async (show) => {
-                let showReport = {
+                const showReport = {
                     channelNumber: "--",
                     channelName: show.name + " (custom show)",
                     destroyedPrograms: 0,
@@ -98,12 +98,12 @@ class PlexServerDB {
     }
 
     async fixupEveryProgramHolders(serverName, newServer) {
-        let reports = await Promise.all([
+        const reports = await Promise.all([
             this.fixupAllChannels(serverName, newServer),
             this.fixupAllFillers(serverName, newServer),
             this.fixupAllShows(serverName, newServer),
         ]);
-        let report = [];
+        const report = [];
         reports.forEach((r) =>
             r.forEach((r2) => {
                 report.push(r2);
@@ -113,7 +113,7 @@ class PlexServerDB {
     }
 
     async deleteServer(name) {
-        let report = await this.fixupEveryProgramHolders(name, null);
+        const report = await this.fixupEveryProgramHolders(name, null);
         this.db["plex-servers"].remove({ name: name });
         return report;
     }
@@ -123,7 +123,7 @@ class PlexServerDB {
     }
 
     async updateServer(server) {
-        let name = server.name;
+        const name = server.name;
         if (typeof name === "undefined") {
             throw Error("Missing server name from request");
         }
@@ -140,7 +140,7 @@ class PlexServerDB {
         if (typeof arChannels === "undefined") {
             arChannels = false;
         }
-        let newServer = {
+        const newServer = {
             name: s.name,
             uri: server.uri,
             accessToken: server.accessToken,
@@ -150,7 +150,7 @@ class PlexServerDB {
         };
         this.normalizeServer(newServer);
 
-        let report = await this.fixupEveryProgramHolders(name, newServer);
+        const report = await this.fixupEveryProgramHolders(name, newServer);
 
         this.db["plex-servers"].update({ _id: s._id }, newServer);
         return report;
@@ -162,7 +162,7 @@ class PlexServerDB {
             name = "plex";
         }
         let i = 2;
-        let prefix = name;
+        const prefix = name;
         let resultName = name;
         while (this.doesNameExist(resultName)) {
             resultName = `${prefix}${i}`;
@@ -177,9 +177,9 @@ class PlexServerDB {
         if (typeof arChannels === "undefined") {
             arChannels = false;
         }
-        let index = this.db["plex-servers"].find({}).length;
+        const index = this.db["plex-servers"].find({}).length;
 
-        let newServer = {
+        const newServer = {
             name: name,
             uri: server.uri,
             accessToken: server.accessToken,
@@ -213,10 +213,10 @@ class PlexServerDB {
                     program[field].includes("/library/metadata") &&
                     program[field].includes("X-Plex-Token")
                 ) {
-                    let m = program[field].match(ICON_REGEX);
+                    const m = program[field].match(ICON_REGEX);
                     if (m.length == 2) {
-                        let lib = m[1];
-                        let newUri = `${newServer.uri}${lib}?X-Plex-Token=${newServer.accessToken}`;
+                        const lib = m[1];
+                        const newUri = `${newServer.uri}${lib}?X-Plex-Token=${newServer.accessToken}`;
                         program[field] = newUri;
                         modified = true;
                     }

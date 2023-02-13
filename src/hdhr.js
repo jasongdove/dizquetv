@@ -1,7 +1,7 @@
-const express = require("express");
-const SSDP = require("node-ssdp").Server;
+import { Router } from "express";
+import { Server as SSDP } from "node-ssdp";
 
-module.exports = hdhr;
+export default hdhr;
 
 function hdhr(db, channelDB) {
     const server = new SSDP({
@@ -17,24 +17,24 @@ function hdhr(db, channelDB) {
     server.addUSN("upnp:rootdevice");
     server.addUSN("urn:schemas-upnp-org:device:MediaServer:1");
 
-    var router = express.Router();
+    const router = Router();
 
     router.get("/device.xml", (req, res) => {
-        var device = getDevice(db, req.protocol + "://" + req.get("host"));
+        const device = getDevice(db, req.protocol + "://" + req.get("host"));
         res.header("Content-Type", "application/xml");
-        var data = device.getXml();
+        const data = device.getXml();
         res.send(data);
     });
 
     router.get("/discover.json", (req, res) => {
-        var device = getDevice(db, req.protocol + "://" + req.get("host"));
+        const device = getDevice(db, req.protocol + "://" + req.get("host"));
         res.header("Content-Type", "application/json");
         res.send(JSON.stringify(device));
     });
 
     router.get("/lineup_status.json", (req, res) => {
         res.header("Content-Type", "application/json");
-        var data = {
+        const data = {
             ScanInProgress: 0,
             ScanPossible: 1,
             Source: "Cable",
@@ -44,8 +44,8 @@ function hdhr(db, channelDB) {
     });
     router.get("/lineup.json", async (req, res) => {
         res.header("Content-Type", "application/json");
-        var lineup = [];
-        var channels = await channelDB.getAllChannels();
+        const lineup = [];
+        const channels = await channelDB.getAllChannels();
         for (let i = 0, l = channels.length; i < l; i++) {
             if (channels[i].stealth !== true) {
                 lineup.push({
@@ -64,8 +64,8 @@ function hdhr(db, channelDB) {
 }
 
 function getDevice(db, host) {
-    let hdhrSettings = db["hdhr-settings"].find()[0];
-    var device = {
+    const hdhrSettings = db["hdhr-settings"].find()[0];
+    const device = {
         FriendlyName: "dizqueTV",
         Manufacturer: "dizqueTV - Silicondust",
         ManufacturerURL: "https://github.com/vexorian/dizquetv",

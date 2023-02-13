@@ -1,5 +1,5 @@
-const path = require("path");
-var fs = require("fs");
+import { join, basename, extname } from "path";
+import { readFile, writeFile, writeFileSync, unlink, readdir } from "fs";
 
 class ChannelDB {
     constructor(folder) {
@@ -7,10 +7,10 @@ class ChannelDB {
     }
 
     async getChannel(number) {
-        let f = path.join(this.folder, `${number}.json`);
+        const f = join(this.folder, `${number}.json`);
         try {
             return await new Promise((resolve, reject) => {
-                fs.readFile(f, (err, data) => {
+                readFile(f, (err, data) => {
                     if (err) {
                         return reject(err);
                     }
@@ -29,7 +29,7 @@ class ChannelDB {
 
     async saveChannel(number, json) {
         await this.validateChannelJson(number, json);
-        let f = path.join(this.folder, `${json.number}.json`);
+        const f = join(this.folder, `${json.number}.json`);
         return await new Promise((resolve, reject) => {
             let data = undefined;
             try {
@@ -37,7 +37,7 @@ class ChannelDB {
             } catch (err) {
                 return reject(err);
             }
-            fs.writeFile(f, data, (err) => {
+            writeFile(f, data, (err) => {
                 if (err) {
                     return reject(err);
                 }
@@ -49,9 +49,9 @@ class ChannelDB {
     saveChannelSync(number, json) {
         this.validateChannelJson(number, json);
 
-        let data = JSON.stringify(json);
-        let f = path.join(this.folder, `${json.number}.json`);
-        fs.writeFileSync(f, data);
+        const data = JSON.stringify(json);
+        const f = join(this.folder, `${json.number}.json`);
+        writeFileSync(f, data);
     }
 
     validateChannelJson(number, json) {
@@ -72,9 +72,9 @@ class ChannelDB {
     }
 
     async deleteChannel(number) {
-        let f = path.join(this.folder, `${number}.json`);
+        const f = join(this.folder, `${number}.json`);
         await new Promise((resolve, reject) => {
-            fs.unlink(f, function (err) {
+            unlink(f, function (err) {
                 if (err) {
                     return reject(err);
                 }
@@ -85,15 +85,15 @@ class ChannelDB {
 
     async getAllChannelNumbers() {
         return await new Promise((resolve, reject) => {
-            fs.readdir(this.folder, function (err, items) {
+            readdir(this.folder, function (err, items) {
                 if (err) {
                     return reject(err);
                 }
-                let channelNumbers = [];
+                const channelNumbers = [];
                 for (let i = 0; i < items.length; i++) {
-                    let name = path.basename(items[i]);
-                    if (path.extname(name) === ".json") {
-                        let numberStr = name.slice(0, -5);
+                    const name = basename(items[i]);
+                    if (extname(name) === ".json") {
+                        const numberStr = name.slice(0, -5);
                         if (!isNaN(numberStr)) {
                             channelNumbers.push(parseInt(numberStr));
                         }
@@ -105,9 +105,9 @@ class ChannelDB {
     }
 
     async getAllChannels() {
-        let numbers = await this.getAllChannelNumbers();
+        const numbers = await this.getAllChannelNumbers();
         return await Promise.all(numbers.map(async (c) => this.getChannel(c)));
     }
 }
 
-module.exports = ChannelDB;
+export default ChannelDB;

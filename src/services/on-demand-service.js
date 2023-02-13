@@ -1,11 +1,8 @@
-const constants = require("../constants");
+import { SLACK as _SLACK } from "../constants";
 
-const SLACK = constants.SLACK;
+const SLACK = _SLACK;
 
 class OnDemandService {
-    /****
-     *
-     **/
     constructor(channelService) {
         this.channelService = channelService;
         this.channelService.setOnDemandService(this);
@@ -33,7 +30,7 @@ class OnDemandService {
             }
 
             if (typeof channel.onDemand !== "undefined" && channel.onDemand.isOnDemand && !channel.onDemand.paused) {
-                //pause the channel
+                // pause the channel
                 channel = this.pauseOnDemandChannel(channel, stopTime);
                 if (waitForSave) {
                     await this.updateChannelSync(channel);
@@ -48,11 +45,11 @@ class OnDemandService {
 
     pauseOnDemandChannel(originalChannel, stopTime) {
         console.log("Pause on-demand channel : " + originalChannel.number);
-        let channel = clone(originalChannel);
+        const channel = clone(originalChannel);
         // first find what the heck is playing
-        let t = stopTime;
-        let s = new Date(channel.startTime).getTime();
-        let onDemand = channel.onDemand;
+        const t = stopTime;
+        const s = new Date(channel.startTime).getTime();
+        const onDemand = channel.onDemand;
         onDemand.paused = true;
         if (channel.programs.length == 0) {
             console.log("On-demand channel has no programs. That doesn't really make a lot of sense...");
@@ -66,7 +63,7 @@ class OnDemandService {
             let i = 0;
             let total = 0;
             while (true) {
-                let d = channel.programs[i].duration;
+                const d = channel.programs[i].duration;
                 if (s + total <= t && t < s + total + d) {
                     break;
                 }
@@ -74,7 +71,7 @@ class OnDemandService {
                 i = (i + 1) % channel.programs.length;
             }
             // rotate
-            let programs = [];
+            const programs = [];
             for (let j = i; j < channel.programs.length; j++) {
                 programs.push(channel.programs[j]);
             }
@@ -126,7 +123,7 @@ class OnDemandService {
                 // if it is active, the channel isn't paused
                 channel.onDemand.paused = false;
             } else {
-                let s = new Date(channel.startTime).getTime();
+                const s = new Date(channel.startTime).getTime();
                 channel.onDemand.paused = true;
                 channel.onDemand.firstProgramModulo = s % channel.onDemand.modulo;
                 channel.onDemand.playedOffset = 0;
@@ -135,22 +132,22 @@ class OnDemandService {
     }
 
     resumeOnDemandChannel(t, originalChannel) {
-        let channel = clone(originalChannel);
+        const channel = clone(originalChannel);
         console.log("Resume on-demand channel: " + channel.name);
-        let programs = channel.programs;
-        let onDemand = channel.onDemand;
-        onDemand.paused = false; //should be the invariant
+        const programs = channel.programs;
+        const onDemand = channel.onDemand;
+        onDemand.paused = false; // should be the invariant
         if (programs.length == 0) {
             console.log("On-demand channel is empty. This doesn't make a lot of sense...");
             return channel;
         }
         let i = 0;
-        let backupFo = onDemand.firstProgramModulo;
+        const backupFo = onDemand.firstProgramModulo;
 
         while (i < programs.length) {
-            let program = programs[i];
+            const program = programs[i];
             if (program.isOffline && program.type !== "redirect") {
-                //skip flex
+                // skip flex
                 i++;
                 onDemand.playedOffset = 0;
                 onDemand.firstProgramModulo = (onDemand.firstProgramModulo + program.duration) % onDemand.modulo;
@@ -168,7 +165,7 @@ class OnDemandService {
         }
         // Last we've seen this channel, it was playing program #i , played the first playedOffset milliseconds.
         // move i to the beginning of the program list
-        let newPrograms = [];
+        const newPrograms = [];
         for (let j = i; j < programs.length; j++) {
             newPrograms.push(programs[j]);
         }
@@ -179,16 +176,16 @@ class OnDemandService {
         let startTime = t - onDemand.playedOffset;
         // with this startTime, it would work perfectly if modulo is 1. But what about other cases?
 
-        let tm = t % onDemand.modulo;
-        let pm = (onDemand.firstProgramModulo + onDemand.playedOffset) % onDemand.modulo;
+        const tm = t % onDemand.modulo;
+        const pm = (onDemand.firstProgramModulo + onDemand.playedOffset) % onDemand.modulo;
 
         if (tm < pm) {
             startTime += pm - tm;
         } else {
-            let o = tm - pm;
+            const o = tm - pm;
             startTime = startTime - o;
-            //It looks like it is convenient to make the on-demand a bit more lenient SLACK-wise tha
-            //other parts of the schedule process. So SLACK*2 instead of just SLACK
+            // It looks like it is convenient to make the on-demand a bit more lenient SLACK-wise tha
+            // other parts of the schedule process. So SLACK*2 instead of just SLACK
             if (o >= SLACK * 2) {
                 startTime += onDemand.modulo;
             }
@@ -210,4 +207,4 @@ function clone(channel) {
     return JSON.parse(JSON.stringify(channel));
 }
 
-module.exports = OnDemandService;
+export default OnDemandService;

@@ -1,39 +1,39 @@
-const db = require("diskdb");
-const fs = require("fs");
-const path = require("path");
-const express = require("express");
-const bodyParser = require("body-parser");
-const fileUpload = require("express-fileupload");
-const i18next = require("i18next");
-const i18nextMiddleware = require("i18next-http-middleware/cjs");
-const i18nextBackend = require("i18next-fs-backend/cjs");
+import db, { connect } from "diskdb";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { join, resolve as _resolve } from "path";
+import express from "express";
+import { json } from "body-parser";
+import fileUpload from "express-fileupload";
+import i18next, { use, t as _t } from "i18next";
+import { LanguageDetector, handle } from "i18next-http-middleware/cjs";
+import i18nextBackend from "i18next-fs-backend/cjs";
 
-const api = require("./src/api");
-const dbMigration = require("./src/database-migration");
-const video = require("./src/video");
-const HDHR = require("./src/hdhr");
-const FileCacheService = require("./src/services/file-cache-service");
-const CacheImageService = require("./src/services/cache-image-service");
-const ChannelService = require("./src/services/channel-service");
+import { router } from "./src/api";
+import { initDB as _initDB } from "./src/database-migration";
+import { router as _router, shutdown } from "./src/video";
+import HDHR from "./src/hdhr";
+import FileCacheService from "./src/services/file-cache-service";
+import CacheImageService from "./src/services/cache-image-service";
+import ChannelService from "./src/services/channel-service";
 
-const xmltv = require("./src/xmltv");
-const Plex = require("./src/plex");
-const constants = require("./src/constants");
-const ChannelDB = require("./src/dao/channel-db");
-const M3uService = require("./src/services/m3u-service");
-const FillerDB = require("./src/dao/filler-db");
-const CustomShowDB = require("./src/dao/custom-show-db");
-const TVGuideService = require("./src/services/tv-guide-service");
-const EventService = require("./src/services/event-service");
-const OnDemandService = require("./src/services/on-demand-service");
-const ProgrammingService = require("./src/services/programming-service");
-const ActiveChannelService = require("./src/services/active-channel-service");
+import xmltv, { shutdown as _shutdown } from "./src/xmltv";
+import Plex from "./src/plex";
+import { VERSION_NAME } from "./src/constants";
+import ChannelDB from "./src/dao/channel-db";
+import M3uService from "./src/services/m3u-service";
+import FillerDB from "./src/dao/filler-db";
+import CustomShowDB from "./src/dao/custom-show-db";
+import TVGuideService from "./src/services/tv-guide-service";
+import EventService from "./src/services/event-service";
+import OnDemandService from "./src/services/on-demand-service";
+import ProgrammingService from "./src/services/programming-service";
+import ActiveChannelService from "./src/services/active-channel-service";
 
-const onShutdown = require("node-graceful-shutdown").onShutdown;
+import { onShutdown } from "node-graceful-shutdown";
 
 console.log(
     `         \\
-   dizqueTV ${constants.VERSION_NAME}
+   dizqueTV ${VERSION_NAME}
 .------------.
 |:::///### o |
 |:::///###   |
@@ -57,11 +57,11 @@ for (let i = 0, l = process.argv.length; i < l; i++) {
         process.env.DATABASE = process.argv[i + 1];
 }
 
-process.env.DATABASE = process.env.DATABASE || path.join(".", ".dizquetv");
+process.env.DATABASE = process.env.DATABASE || join(".", ".dizquetv");
 process.env.PORT = process.env.PORT || 8000;
 
-if (!fs.existsSync(process.env.DATABASE)) {
-    if (fs.existsSync(path.join(".", ".pseudotv"))) {
+if (!existsSync(process.env.DATABASE)) {
+    if (existsSync(join(".", ".pseudotv"))) {
         throw Error(
             process.env.DATABASE +
                 " folder not found but ./.pseudotv has been found. Please rename this folder or create an empty " +
@@ -69,31 +69,31 @@ if (!fs.existsSync(process.env.DATABASE)) {
                 " folder so that the program is not confused about.",
         );
     }
-    fs.mkdirSync(process.env.DATABASE);
+    mkdirSync(process.env.DATABASE);
 }
 
-if (!fs.existsSync(path.join(process.env.DATABASE, "images"))) {
-    fs.mkdirSync(path.join(process.env.DATABASE, "images"));
+if (!existsSync(join(process.env.DATABASE, "images"))) {
+    mkdirSync(join(process.env.DATABASE, "images"));
 }
-if (!fs.existsSync(path.join(process.env.DATABASE, "channels"))) {
-    fs.mkdirSync(path.join(process.env.DATABASE, "channels"));
+if (!existsSync(join(process.env.DATABASE, "channels"))) {
+    mkdirSync(join(process.env.DATABASE, "channels"));
 }
-if (!fs.existsSync(path.join(process.env.DATABASE, "filler"))) {
-    fs.mkdirSync(path.join(process.env.DATABASE, "filler"));
+if (!existsSync(join(process.env.DATABASE, "filler"))) {
+    mkdirSync(join(process.env.DATABASE, "filler"));
 }
-if (!fs.existsSync(path.join(process.env.DATABASE, "custom-shows"))) {
-    fs.mkdirSync(path.join(process.env.DATABASE, "custom-shows"));
+if (!existsSync(join(process.env.DATABASE, "custom-shows"))) {
+    mkdirSync(join(process.env.DATABASE, "custom-shows"));
 }
-if (!fs.existsSync(path.join(process.env.DATABASE, "cache"))) {
-    fs.mkdirSync(path.join(process.env.DATABASE, "cache"));
+if (!existsSync(join(process.env.DATABASE, "cache"))) {
+    mkdirSync(join(process.env.DATABASE, "cache"));
 }
-if (!fs.existsSync(path.join(process.env.DATABASE, "cache", "images"))) {
-    fs.mkdirSync(path.join(process.env.DATABASE, "cache", "images"));
+if (!existsSync(join(process.env.DATABASE, "cache", "images"))) {
+    mkdirSync(join(process.env.DATABASE, "cache", "images"));
 }
 
-channelDB = new ChannelDB(path.join(process.env.DATABASE, "channels"));
+channelDB = new ChannelDB(join(process.env.DATABASE, "channels"));
 
-db.connect(process.env.DATABASE, [
+connect(process.env.DATABASE, [
     "channels",
     "plex-servers",
     "ffmpeg-settings",
@@ -109,10 +109,10 @@ initDB(db, channelDB);
 
 channelService = new ChannelService(channelDB);
 
-fillerDB = new FillerDB(path.join(process.env.DATABASE, "filler"), channelService);
-customShowDB = new CustomShowDB(path.join(process.env.DATABASE, "custom-shows"));
+fillerDB = new FillerDB(join(process.env.DATABASE, "filler"), channelService);
+customShowDB = new CustomShowDB(join(process.env.DATABASE, "custom-shows"));
 
-fileCache = new FileCacheService(path.join(process.env.DATABASE, "cache"));
+fileCache = new FileCacheService(join(process.env.DATABASE, "cache"));
 cacheImageService = new CacheImageService(db, fileCache);
 m3uService = new M3uService(fileCache, channelService);
 
@@ -122,15 +122,14 @@ activeChannelService = new ActiveChannelService(onDemandService, channelService)
 
 eventService = new EventService();
 
-i18next
-    .use(i18nextBackend)
-    .use(i18nextMiddleware.LanguageDetector)
+use(i18nextBackend)
+    .use(LanguageDetector)
     .init({
         // debug: true,
         initImmediate: false,
         backend: {
-            loadPath: path.join(__dirname, "/locales/server/{{lng}}.json"),
-            addPath: path.join(__dirname, "/locales/server/{{lng}}.json"),
+            loadPath: join(__dirname, "/locales/server/{{lng}}.json"),
+            addPath: join(__dirname, "/locales/server/{{lng}}.json"),
         },
         lng: "en",
         fallbackLng: "en",
@@ -139,7 +138,7 @@ i18next
 
 const guideService = new TVGuideService(xmltv, db, cacheImageService, null, i18next);
 
-let xmltvInterval = {
+const xmltvInterval = {
     interval: null,
     lastRefresh: null,
     updateXML: async () => {
@@ -147,8 +146,8 @@ let xmltvInterval = {
 
         try {
             channels = await channelService.getAllChannels();
-            let xmltvSettings = db["xmltv-settings"].find()[0];
-            let t = guideService.prepareRefresh(channels, xmltvSettings.cache * 60 * 60 * 1000);
+            const xmltvSettings = db["xmltv-settings"].find()[0];
+            const t = guideService.prepareRefresh(channels, xmltvSettings.cache * 60 * 60 * 1000);
             channels = null;
 
             guideService.refresh(t);
@@ -164,10 +163,10 @@ let xmltvInterval = {
 
         channels = await channelService.getAllChannels();
 
-        let plexServers = db["plex-servers"].find();
+        const plexServers = db["plex-servers"].find();
         for (let i = 0, l = plexServers.length; i < l; i++) {
             // Foreach plex server
-            let plex = new Plex(plexServers[i]);
+            const plex = new Plex(plexServers[i]);
             let dvrs;
             if (!plexServers[i].arGuide && !plexServers[i].arChannels) {
                 continue;
@@ -205,7 +204,7 @@ let xmltvInterval = {
     },
 
     startInterval: () => {
-        let xmltvSettings = db["xmltv-settings"].find()[0];
+        const xmltvSettings = db["xmltv-settings"].find()[0];
         if (xmltvSettings.refresh !== 0) {
             xmltvInterval.interval = setInterval(async () => {
                 try {
@@ -233,11 +232,11 @@ guideService.on("xmltv-updated", (data) => {
 xmltvInterval.updateXML();
 xmltvInterval.startInterval();
 
-//setup xmltv update
+// setup xmltv update
 channelService.on("channel-update", (data) => {
     try {
         console.log("Updating TV Guide due to channel update...");
-        //TODO: this could be smarter, like avoid updating 3 times if the channel was saved three times in a short time interval...
+        // TODO: this could be smarter, like avoid updating 3 times if the channel was saved three times in a short time interval...
         xmltvInterval.updateXML();
         xmltvInterval.restartInterval();
     } catch (err) {
@@ -245,18 +244,18 @@ channelService.on("channel-update", (data) => {
     }
 });
 
-let hdhr = HDHR(db, channelDB);
-let app = express();
+const hdhr = HDHR(db, channelDB);
+const app = express();
 eventService.setup(app);
 
-app.use(i18nextMiddleware.handle(i18next, {}));
+app.use(handle(i18next, {}));
 
 app.use(
     fileUpload({
         createParentPath: true,
     }),
 );
-app.use(bodyParser.json({ limit: "50mb" }));
+app.use(json({ limit: "50mb" }));
 
 app.get("/version.js", (req, res) => {
     res.writeHead(200, {
@@ -268,70 +267,70 @@ app.get("/version.js", (req, res) => {
             setTimeout( setUIVersionNow, 1000);
             var element = document.getElementById("uiversion");
             if (element != null) {
-                element.innerHTML = "${constants.VERSION_NAME}";
+                element.innerHTML = "${VERSION_NAME}";
             }
         }
         setTimeout( setUIVersionNow, 1000);
     `);
     res.end();
 });
-app.use("/images", express.static(path.join(process.env.DATABASE, "images")));
-app.use(express.static(path.join(__dirname, "web", "public")));
-app.use("/images", express.static(path.join(process.env.DATABASE, "images")));
+app.use("/images", express.static(join(process.env.DATABASE, "images")));
+app.use(express.static(join(__dirname, "web", "public")));
+app.use("/images", express.static(join(process.env.DATABASE, "images")));
 app.use("/cache/images", cacheImageService.routerInterceptor());
-app.use("/cache/images", express.static(path.join(process.env.DATABASE, "cache", "images")));
-app.use("/favicon.svg", express.static(path.join(__dirname, "resources", "favicon.svg")));
-app.use("/custom.css", express.static(path.join(process.env.DATABASE, "custom.css")));
+app.use("/cache/images", express.static(join(process.env.DATABASE, "cache", "images")));
+app.use("/favicon.svg", express.static(join(__dirname, "resources", "favicon.svg")));
+app.use("/custom.css", express.static(join(process.env.DATABASE, "custom.css")));
 
 // API Routers
-app.use(api.router(db, channelService, fillerDB, customShowDB, xmltvInterval, guideService, m3uService, eventService));
+app.use(router(db, channelService, fillerDB, customShowDB, xmltvInterval, guideService, m3uService, eventService));
 app.use("/api/cache/images", cacheImageService.apiRouters());
 
-app.use(video.router(channelService, fillerDB, db, programmingService, activeChannelService));
+app.use(_router(channelService, fillerDB, db, programmingService, activeChannelService));
 app.use(hdhr.router);
 app.listen(process.env.PORT, () => {
     console.log(`HTTP server running on port: http://*:${process.env.PORT}`);
-    let hdhrSettings = db["hdhr-settings"].find()[0];
+    const hdhrSettings = db["hdhr-settings"].find()[0];
     if (hdhrSettings.autoDiscovery === true) hdhr.ssdp.start();
 });
 
 function initDB(db, channelDB) {
-    if (!fs.existsSync(process.env.DATABASE + "/images/dizquetv.png")) {
-        let data = fs.readFileSync(path.resolve(path.join(__dirname, "resources/dizquetv.png")));
-        fs.writeFileSync(process.env.DATABASE + "/images/dizquetv.png", data);
+    if (!existsSync(process.env.DATABASE + "/images/dizquetv.png")) {
+        const data = readFileSync(_resolve(join(__dirname, "resources/dizquetv.png")));
+        writeFileSync(process.env.DATABASE + "/images/dizquetv.png", data);
     }
-    dbMigration.initDB(db, channelDB, __dirname);
-    if (!fs.existsSync(process.env.DATABASE + "/font.ttf")) {
-        let data = fs.readFileSync(path.resolve(path.join(__dirname, "resources/font.ttf")));
-        fs.writeFileSync(process.env.DATABASE + "/font.ttf", data);
+    _initDB(db, channelDB, __dirname);
+    if (!existsSync(process.env.DATABASE + "/font.ttf")) {
+        const data = readFileSync(_resolve(join(__dirname, "resources/font.ttf")));
+        writeFileSync(process.env.DATABASE + "/font.ttf", data);
     }
-    if (!fs.existsSync(process.env.DATABASE + "/images/dizquetv.png")) {
-        let data = fs.readFileSync(path.resolve(path.join(__dirname, "resources/dizquetv.png")));
-        fs.writeFileSync(process.env.DATABASE + "/images/dizquetv.png", data);
+    if (!existsSync(process.env.DATABASE + "/images/dizquetv.png")) {
+        const data = readFileSync(_resolve(join(__dirname, "resources/dizquetv.png")));
+        writeFileSync(process.env.DATABASE + "/images/dizquetv.png", data);
     }
-    if (!fs.existsSync(process.env.DATABASE + "/images/generic-error-screen.png")) {
-        let data = fs.readFileSync(path.resolve(path.join(__dirname, "resources/generic-error-screen.png")));
-        fs.writeFileSync(process.env.DATABASE + "/images/generic-error-screen.png", data);
+    if (!existsSync(process.env.DATABASE + "/images/generic-error-screen.png")) {
+        const data = readFileSync(_resolve(join(__dirname, "resources/generic-error-screen.png")));
+        writeFileSync(process.env.DATABASE + "/images/generic-error-screen.png", data);
     }
-    if (!fs.existsSync(process.env.DATABASE + "/images/generic-offline-screen.png")) {
-        let data = fs.readFileSync(path.resolve(path.join(__dirname, "resources/generic-offline-screen.png")));
-        fs.writeFileSync(process.env.DATABASE + "/images/generic-offline-screen.png", data);
+    if (!existsSync(process.env.DATABASE + "/images/generic-offline-screen.png")) {
+        const data = readFileSync(_resolve(join(__dirname, "resources/generic-offline-screen.png")));
+        writeFileSync(process.env.DATABASE + "/images/generic-offline-screen.png", data);
     }
-    if (!fs.existsSync(process.env.DATABASE + "/images/generic-music-screen.png")) {
-        let data = fs.readFileSync(path.resolve(path.join(__dirname, "resources/generic-music-screen.png")));
-        fs.writeFileSync(process.env.DATABASE + "/images/generic-music-screen.png", data);
+    if (!existsSync(process.env.DATABASE + "/images/generic-music-screen.png")) {
+        const data = readFileSync(_resolve(join(__dirname, "resources/generic-music-screen.png")));
+        writeFileSync(process.env.DATABASE + "/images/generic-music-screen.png", data);
     }
-    if (!fs.existsSync(process.env.DATABASE + "/images/loading-screen.png")) {
-        let data = fs.readFileSync(path.resolve(path.join(__dirname, "resources/loading-screen.png")));
-        fs.writeFileSync(process.env.DATABASE + "/images/loading-screen.png", data);
+    if (!existsSync(process.env.DATABASE + "/images/loading-screen.png")) {
+        const data = readFileSync(_resolve(join(__dirname, "resources/loading-screen.png")));
+        writeFileSync(process.env.DATABASE + "/images/loading-screen.png", data);
     }
-    if (!fs.existsSync(process.env.DATABASE + "/images/black.png")) {
-        let data = fs.readFileSync(path.resolve(path.join(__dirname, "resources/black.png")));
-        fs.writeFileSync(process.env.DATABASE + "/images/black.png", data);
+    if (!existsSync(process.env.DATABASE + "/images/black.png")) {
+        const data = readFileSync(_resolve(join(__dirname, "resources/black.png")));
+        writeFileSync(process.env.DATABASE + "/images/black.png", data);
     }
-    if (!fs.existsSync(path.join(process.env.DATABASE, "custom.css"))) {
-        let data = fs.readFileSync(path.resolve(path.join(__dirname, "resources", "default-custom.css")));
-        fs.writeFileSync(path.join(process.env.DATABASE, "custom.css"), data);
+    if (!existsSync(join(process.env.DATABASE, "custom.css"))) {
+        const data = readFileSync(_resolve(join(__dirname, "resources", "default-custom.css")));
+        writeFileSync(join(process.env.DATABASE, "custom.css"), data);
     }
 }
 
@@ -342,10 +341,10 @@ function _wait(t) {
 }
 
 async function sendEventAfterTime() {
-    let t = new Date().getTime();
+    const t = new Date().getTime();
     await _wait(20000);
     eventService.push("lifecycle", {
-        message: i18next.t("event.server_started"),
+        message: _t("event.server_started"),
         detail: {
             time: t,
         },
@@ -355,9 +354,9 @@ async function sendEventAfterTime() {
 sendEventAfterTime();
 
 onShutdown("log", [], async () => {
-    let t = new Date().getTime();
+    const t = new Date().getTime();
     eventService.push("lifecycle", {
-        message: i18next.t("event.server_shutdown"),
+        message: _t("event.server_shutdown"),
         detail: {
             time: t,
         },
@@ -368,12 +367,12 @@ onShutdown("log", [], async () => {
     await _wait(2000);
 });
 onShutdown("xmltv-writer", [], async () => {
-    await xmltv.shutdown();
+    await _shutdown();
 });
 onShutdown("active-channels", [], async () => {
     await activeChannelService.shutdown();
 });
 
 onShutdown("video", [], async () => {
-    await video.shutdown();
+    await shutdown();
 });

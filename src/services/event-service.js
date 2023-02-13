@@ -1,10 +1,10 @@
-const EventEmitter = require("events");
+import EventEmitter from "events";
 
 class EventsService {
     constructor() {
         this.stream = new EventEmitter();
-        let that = this;
-        let fun = () => {
+        const that = this;
+        const fun = () => {
             that.push("heartbeat", "{}");
             setTimeout(fun, 5000);
         };
@@ -19,8 +19,8 @@ class EventsService {
                 "Cache-Control": "no-cache",
                 "connection": "keep-alive",
             });
-            let listener = (event, data) => {
-                //console.log( String(event) + " " + JSON.stringify(data) );
+            const listener = (event, data) => {
+                // console.log( String(event) + " " + JSON.stringify(data) );
                 response.write("event: " + String(event) + "\ndata: " + JSON.stringify(data) + "\nretry: 5000\n\n");
             };
 
@@ -40,4 +40,4 @@ class EventsService {
     }
 }
 
-module.exports = EventsService;
+export default EventsService;

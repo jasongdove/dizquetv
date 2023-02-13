@@ -1,7 +1,13 @@
-const events = require("events");
-const channelCache = require("../channel-cache");
+import { EventEmitter } from "events";
+import {
+    saveChannelConfig,
+    clear,
+    getChannelConfig,
+    getAllNumbers,
+    getAllChannels as _getAllChannels,
+} from "../channel-cache";
 
-class ChannelService extends events.EventEmitter {
+class ChannelService extends EventEmitter {
     constructor(channelDB) {
         super();
         this.channelDB = channelDB;
@@ -13,13 +19,13 @@ class ChannelService extends events.EventEmitter {
     }
 
     async saveChannel(number, channelJson, options) {
-        let channel = cleanUpChannel(channelJson);
+        const channel = cleanUpChannel(channelJson);
         let ignoreOnDemand = true;
         if (this.onDemandService != null && (typeof options === "undefined" || options.ignoreOnDemand !== true)) {
             ignoreOnDemand = false;
             this.onDemandService.fixupChannelBeforeSave(channel);
         }
-        channelCache.saveChannelConfig(number, channel);
+        saveChannelConfig(number, channel);
         await channelDB.saveChannel(number, channel);
 
         this.emit("channel-update", { channelNumber: number, channel: channel, ignoreOnDemand: ignoreOnDemand });
@@ -29,11 +35,11 @@ class ChannelService extends events.EventEmitter {
         await channelDB.deleteChannel(number);
         this.emit("channel-update", { channelNumber: number, channel: null });
 
-        channelCache.clear();
+        clear();
     }
 
     async getChannel(number) {
-        let lis = await channelCache.getChannelConfig(this.channelDB, number);
+        const lis = await getChannelConfig(this.channelDB, number);
         if (lis == null || lis.length !== 1) {
             return null;
         }
@@ -41,11 +47,11 @@ class ChannelService extends events.EventEmitter {
     }
 
     async getAllChannelNumbers() {
-        return await channelCache.getAllNumbers(this.channelDB);
+        return await getAllNumbers(this.channelDB);
     }
 
     async getAllChannels() {
-        return await channelCache.getAllChannels(this.channelDB);
+        return await _getAllChannels(this.channelDB);
     }
 }
 
@@ -85,4 +91,4 @@ function cleanUpChannel(channel) {
     return channel;
 }
 
-module.exports = ChannelService;
+export default ChannelService;

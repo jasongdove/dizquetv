@@ -1,7 +1,7 @@
-const spawn = require("child_process").spawn;
-const events = require("events");
+import { spawn } from "child_process";
+import { EventEmitter } from "events";
 
-class FFMPEG_TEXT extends events.EventEmitter {
+class FFMPEG_TEXT extends EventEmitter {
     constructor(opts, title, subtitle) {
         super();
         this.args = [
@@ -53,4 +53,4 @@ class FFMPEG_TEXT extends events.EventEmitter {
     }
 }
 
-module.exports = FFMPEG_TEXT;
+export default FFMPEG_TEXT;

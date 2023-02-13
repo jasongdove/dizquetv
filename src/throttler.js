@@ -1,6 +1,6 @@
-let constants = require("./constants");
+import { TOO_FREQUENT } from "./constants";
 
-let cache = {};
+const cache = {};
 
 function equalItems(a, b) {
     if (typeof a === "undefined" || a.isOffline || b.isOffline) {
@@ -12,18 +12,18 @@ function equalItems(a, b) {
 }
 
 function wereThereTooManyAttempts(sessionId, lineupItem) {
-    let t1 = new Date().getTime();
+    const t1 = new Date().getTime();
 
     let previous = cache[sessionId];
     let result = false;
 
     if (typeof previous === "undefined") {
         previous = cache[sessionId] = {
-            t0: t1 - constants.TOO_FREQUENT * 5,
+            t0: t1 - TOO_FREQUENT * 5,
             lineupItem: null,
         };
-    } else if (t1 - previous.t0 < constants.TOO_FREQUENT) {
-        //certainly too frequent
+    } else if (t1 - previous.t0 < TOO_FREQUENT) {
+        // certainly too frequent
         result = equalItems(previous.lineupItem, lineupItem);
     }
 
@@ -36,9 +36,9 @@ function wereThereTooManyAttempts(sessionId, lineupItem) {
         if (typeof cache[sessionId] !== "undefined" && cache[sessionId].t0 === t1) {
             delete cache[sessionId];
         }
-    }, constants.TOO_FREQUENT * 5);
+    }, TOO_FREQUENT * 5);
 
     return result;
 }
 
-module.exports = wereThereTooManyAttempts;
+export default wereThereTooManyAttempts;

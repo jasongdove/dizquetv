@@ -1,4 +1,4 @@
-const exec = require("child_process").exec;
+import { exec } from "child_process";
 
 class FFMPEGInfo {
     constructor(opts) {
@@ -28,4 +28,4 @@ class FFMPEGInfo {
     }
 }
 
-module.exports = FFMPEGInfo;
+export default FFMPEGInfo;
