@@ -1,4 +1,4 @@
-FROM arm64v8/node:12.18-alpine3.12
+FROM arm64v8/node:12.18-buster
 WORKDIR /home/node/app
 COPY package*.json ./
 RUN apk add --update --no-cache python3 build-base gcc && ln -sf /usr/bin/python3 /usr/bin/python
