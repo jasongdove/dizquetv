@@ -1,6 +1,7 @@
 FROM node:12.18-alpine3.12
 WORKDIR /home/node/app
 COPY package*.json ./
+RUN apk add --update --no-cache python3 build-base gcc && ln -sf /usr/bin/python3 /usr/bin/python
 RUN npm ci && npm install -g browserify nexe@3.3.7
 COPY . .
 ARG INFO_VERSION="unknown"
