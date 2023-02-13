@@ -5,27 +5,26 @@
  *   it rejects the promise and the error is an Error() class.
  * * Otherwise it returns a stream.
  **/
-const PlexTranscoder = require('./plexTranscoder')
-const EventEmitter = require('events');
-const helperFuncs = require('./helperFuncs')
-const FFMPEG = require('./ffmpeg')
-const constants = require('./constants');
+const PlexTranscoder = require("./plexTranscoder");
+const EventEmitter = require("events");
+const helperFuncs = require("./helperFuncs");
+const FFMPEG = require("./ffmpeg");
+const constants = require("./constants");
 
 let USED_CLIENTS = {};
 
 class PlexPlayer {
-
     constructor(context) {
         this.context = context;
         this.ffmpeg = null;
         this.plexTranscoder = null;
         this.killed = false;
-        let coreClientId = this.context.db['client-id'].find()[0].clientId;
+        let coreClientId = this.context.db["client-id"].find()[0].clientId;
         let i = 0;
-        while ( USED_CLIENTS[coreClientId+"-"+i]===true) {
+        while (USED_CLIENTS[coreClientId + "-" + i] === true) {
             i++;
         }
-        this.clientId = coreClientId+"-"+i;
+        this.clientId = coreClientId + "-" + i;
         USED_CLIENTS[this.clientId] = true;
     }
 
@@ -47,7 +46,7 @@ class PlexPlayer {
         let ffmpegSettings = this.context.ffmpegSettings;
         let db = this.context.db;
         let channel = this.context.channel;
-        let server = db['plex-servers'].find( { 'name': lineupItem.serverKey } );
+        let server = db["plex-servers"].find({ name: lineupItem.serverKey });
         if (server.length == 0) {
             throw Error(`Unable to find server "${lineupItem.serverKey}" specified by program.`);
         }
@@ -57,15 +56,15 @@ class PlexPlayer {
         }
 
         try {
-            let plexSettings = db['plex-settings'].find()[0];
+            let plexSettings = db["plex-settings"].find()[0];
             let plexTranscoder = new PlexTranscoder(this.clientId, server, plexSettings, channel, lineupItem);
             this.plexTranscoder = plexTranscoder;
             let watermark = this.context.watermark;
-            let ffmpeg = new FFMPEG(ffmpegSettings, channel);  // Set the transcoder options
-            ffmpeg.setAudioOnly( this.context.audioOnly );
+            let ffmpeg = new FFMPEG(ffmpegSettings, channel); // Set the transcoder options
+            ffmpeg.setAudioOnly(this.context.audioOnly);
             this.ffmpeg = ffmpeg;
             let streamDuration;
-            if (typeof(lineupItem.streamDuration)!=='undefined') {
+            if (typeof lineupItem.streamDuration !== "undefined") {
                 if (lineupItem.start + lineupItem.streamDuration + constants.SLACK < lineupItem.duration) {
                     streamDuration = lineupItem.streamDuration / 1000;
                 }
@@ -79,52 +78,57 @@ class PlexPlayer {
 
             //let streamStart = (stream.directPlay) ? plexTranscoder.currTimeS : undefined;
             //let streamStart = (stream.directPlay) ? plexTranscoder.currTimeS : lineupItem.start;
-            let streamStart = (stream.directPlay) ? plexTranscoder.currTimeS : undefined;
+            let streamStart = stream.directPlay ? plexTranscoder.currTimeS : undefined;
             let streamStats = stream.streamStats;
             streamStats.duration = lineupItem.streamDuration;
 
             let emitter = new EventEmitter();
             //setTimeout( () => {
-                let ff = await ffmpeg.spawnStream(stream.streamUrl, stream.streamStats, streamStart, streamDuration, watermark, lineupItem.type); // Spawn the ffmpeg process
-                ff.pipe(outStream,  {'end':false} );
+            let ff = await ffmpeg.spawnStream(
+                stream.streamUrl,
+                stream.streamStats,
+                streamStart,
+                streamDuration,
+                watermark,
+                lineupItem.type,
+            ); // Spawn the ffmpeg process
+            ff.pipe(outStream, { end: false });
             //}, 100);
             plexTranscoder.startUpdatingPlex();
 
-            
-            ffmpeg.on('end', () => {
-                emitter.emit('end');
+            ffmpeg.on("end", () => {
+                emitter.emit("end");
             });
-            ffmpeg.on('close', () => {
-                emitter.emit('close');
+            ffmpeg.on("close", () => {
+                emitter.emit("close");
             });
-            ffmpeg.on('error', async (err) => {
+            ffmpeg.on("error", async (err) => {
                 console.log("Replacing failed stream with error stream");
                 ff.unpipe(outStream);
-                ffmpeg.removeAllListeners('data');
-                ffmpeg.removeAllListeners('end');
-                ffmpeg.removeAllListeners('error');
-                ffmpeg.removeAllListeners('close');
-                ffmpeg = new FFMPEG(ffmpegSettings, channel);  // Set the transcoder options
+                ffmpeg.removeAllListeners("data");
+                ffmpeg.removeAllListeners("end");
+                ffmpeg.removeAllListeners("error");
+                ffmpeg.removeAllListeners("close");
+                ffmpeg = new FFMPEG(ffmpegSettings, channel); // Set the transcoder options
                 ffmpeg.setAudioOnly(this.context.audioOnly);
-                ffmpeg.on('close', () => {
-                    emitter.emit('close');
+                ffmpeg.on("close", () => {
+                    emitter.emit("close");
                 });
-                ffmpeg.on('end', () => {
-                    emitter.emit('end');
+                ffmpeg.on("end", () => {
+                    emitter.emit("end");
                 });
-                ffmpeg.on('error', (err) => {
-                    emitter.emit('error', err );
+                ffmpeg.on("error", (err) => {
+                    emitter.emit("error", err);
                 });
 
-                ff = await ffmpeg.spawnError('oops', 'oops', Math.min(streamStats.duration, 60000) );
+                ff = await ffmpeg.spawnError("oops", "oops", Math.min(streamStats.duration, 60000));
                 ff.pipe(outStream);
 
-                emitter.emit('error', err);
+                emitter.emit("error", err);
             });
             return emitter;
-
-        } catch(err) {
-            return Error("Error when playing plex program: " + JSON.stringify(err) );
+        } catch (err) {
+            return Error("Error when playing plex program: " + JSON.stringify(err));
         }
     }
 }

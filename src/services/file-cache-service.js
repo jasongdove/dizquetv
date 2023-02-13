@@ -1,5 +1,5 @@
-const path = require('path');
-const fs = require('fs');
+const path = require("path");
+const fs = require("fs");
 
 /**
  * Store files in cache
@@ -25,7 +25,7 @@ class FileCacheService {
             try {
                 const file = fs.createWriteStream(path.join(this.cachePath, fullFilePath));
                 file.write(data, (err) => {
-                    if(err) {
+                    if (err) {
                         throw Error("Can't save file: ", err);
                     } else {
                         this.cache[fullFilePath] = data;
@@ -48,19 +48,19 @@ class FileCacheService {
     getCache(fullFilePath) {
         return new Promise((resolve, reject) => {
             try {
-                if(fullFilePath in this.cache) {
+                if (fullFilePath in this.cache) {
                     resolve(this.cache[fullFilePath]);
                 } else {
-                    fs.readFile(path.join(this.cachePath, fullFilePath), 'utf8', function (err,data) {
+                    fs.readFile(path.join(this.cachePath, fullFilePath), "utf8", function (err, data) {
                         if (err) {
-                          resolve(false);
+                            resolve(false);
                         }
                         resolve(data);
                     });
                 }
             } catch (error) {
                 resolve(false);
-                throw Error("Can't get file", error)
+                throw Error("Can't get file", error);
             }
         });
     }
@@ -76,11 +76,11 @@ class FileCacheService {
         return new Promise((resolve, reject) => {
             try {
                 let thePath = path.join(this.cachePath, fullFilePath);
-                if (! fs.existsSync(thePath)) {
+                if (!fs.existsSync(thePath)) {
                     return resolve(true);
                 }
                 fs.unlinkSync(thePath, (err) => {
-                    if(err) {
+                    if (err) {
                         throw Error("Can't save file: ", err);
                     } else {
                         delete this.cache[fullFilePath];

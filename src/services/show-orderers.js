@@ -1,9 +1,7 @@
-const random = require('../helperFuncs').random;
+const random = require("../helperFuncs").random;
 const getShowData = require("./get-show-data")();
 const randomJS = require("random-js");
 const Random = randomJS.Random;
-
-
 
 /****
  *
@@ -11,31 +9,31 @@ const Random = randomJS.Random;
  * of episodes
  *
  **/
-function shuffle(array, lo, hi, randomOverride ) {
+function shuffle(array, lo, hi, randomOverride) {
     let r = randomOverride;
-    if (typeof(r) === 'undefined') {
+    if (typeof r === "undefined") {
         r = random;
     }
-    if (typeof(lo) === 'undefined') {
+    if (typeof lo === "undefined") {
         lo = 0;
         hi = array.length;
     }
-    let currentIndex = hi, temporaryValue, randomIndex
+    let currentIndex = hi,
+        temporaryValue,
+        randomIndex;
     while (lo !== currentIndex) {
-        randomIndex =  r.integer(lo, currentIndex-1);
-        currentIndex -= 1
-        temporaryValue = array[currentIndex]
-        array[currentIndex] = array[randomIndex]
-        array[randomIndex] = temporaryValue
+        randomIndex = r.integer(lo, currentIndex - 1);
+        currentIndex -= 1;
+        temporaryValue = array[currentIndex];
+        array[currentIndex] = array[randomIndex];
+        array[randomIndex] = temporaryValue;
     }
-    return array
+    return array;
 }
 
-
 function getShowOrderer(show) {
-    if (typeof(show.orderer) === 'undefined') {
-
-        let sortedPrograms = JSON.parse( JSON.stringify(show.programs) );
+    if (typeof show.orderer === "undefined") {
+        let sortedPrograms = JSON.parse(JSON.stringify(show.programs));
         sortedPrograms.sort((a, b) => {
             let showA = getShowData(a);
             let showB = getShowData(b);
@@ -44,41 +42,32 @@ function getShowOrderer(show) {
 
         let position = 0;
         while (
-            (position + 1 < sortedPrograms.length )
-            &&
-            (
-                getShowData(show.founder).order
-                !==
-                getShowData(sortedPrograms[position]).order
-            )
+            position + 1 < sortedPrograms.length &&
+            getShowData(show.founder).order !== getShowData(sortedPrograms[position]).order
         ) {
             position++;
         }
 
-
         show.orderer = {
-
-            current : () => {
+            current: () => {
                 return sortedPrograms[position];
             },
 
             next: () => {
                 position = (position + 1) % sortedPrograms.length;
             },
-
-        }
+        };
     }
     return show.orderer;
 }
 
-
 function getShowShuffler(show) {
-    if (typeof(show.shuffler) === 'undefined') {
-        if (typeof(show.programs) === 'undefined') {
-            throw Error(show.id + " has no programs?")
+    if (typeof show.shuffler === "undefined") {
+        if (typeof show.programs === "undefined") {
+            throw Error(show.id + " has no programs?");
         }
 
-        let sortedPrograms = JSON.parse( JSON.stringify(show.programs) );
+        let sortedPrograms = JSON.parse(JSON.stringify(show.programs));
         sortedPrograms.sort((a, b) => {
             let showA = getShowData(a);
             let showB = getShowData(b);
@@ -90,15 +79,14 @@ function getShowShuffler(show) {
         let randomPrograms = [];
 
         for (let i = 0; i < n; i++) {
-            splitPrograms.push( sortedPrograms[i] );
-            randomPrograms.push( {} );
+            splitPrograms.push(sortedPrograms[i]);
+            randomPrograms.push({});
         }
 
-     
         let showId = getShowData(show.programs[0]).showId;
 
         let position = show.founder.shuffleOrder;
-        if (typeof(position) === 'undefined') {
+        if (typeof position === "undefined") {
             position = 0;
         }
 
@@ -106,33 +94,30 @@ function getShowShuffler(show) {
 
         let initGeneration = (generation) => {
             let seed = [];
-            for (let i = 0 ; i < show.showId.length; i++) {
-                seed.push( showId.charCodeAt(i) );
+            for (let i = 0; i < show.showId.length; i++) {
+                seed.push(showId.charCodeAt(i));
             }
             seed.push(generation);
 
-            localRandom = new Random( randomJS.MersenneTwister19937.seedWithArray(seed) )
+            localRandom = new Random(randomJS.MersenneTwister19937.seedWithArray(seed));
 
             if (generation == 0) {
-                shuffle( splitPrograms, 0, n , localRandom );
+                shuffle(splitPrograms, 0, n, localRandom);
             }
             for (let i = 0; i < n; i++) {
                 randomPrograms[i] = splitPrograms[i];
             }
             let a = Math.floor(n / 2);
-            shuffle( randomPrograms, 0, a,  localRandom );
-            shuffle( randomPrograms, a, n,  localRandom );
+            shuffle(randomPrograms, 0, a, localRandom);
+            shuffle(randomPrograms, a, n, localRandom);
         };
         initGeneration(0);
-        let generation = Math.floor( position / n );
-        initGeneration( generation );
-        
-        show.shuffler  = {
+        let generation = Math.floor(position / n);
+        initGeneration(generation);
 
-            current : () => {
-                let prog = JSON.parse(
-                    JSON.stringify(randomPrograms[position % n] )
-                );
+        show.shuffler = {
+            current: () => {
+                let prog = JSON.parse(JSON.stringify(randomPrograms[position % n]));
                 prog.shuffleOrder = position;
                 return prog;
             },
@@ -140,17 +125,16 @@ function getShowShuffler(show) {
             next: () => {
                 position++;
                 if (position % n == 0) {
-                    let generation = Math.floor( position / n );
-                    initGeneration( generation );
+                    let generation = Math.floor(position / n);
+                    initGeneration(generation);
                 }
             },
-
-        }
+        };
     }
     return show.shuffler;
 }
 
 module.exports = {
-    getShowOrderer : getShowOrderer,
+    getShowOrderer: getShowOrderer,
     getShowShuffler: getShowShuffler,
-}
+};

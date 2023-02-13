@@ -1,4 +1,3 @@
-
 const helperFuncs = require("../helperFuncs");
 
 /* Tells us what is or should be playing in some channel
@@ -14,8 +13,7 @@ const helperFuncs = require("../helperFuncs");
 
 */
 
-class ProgrammingService
-{
+class ProgrammingService {
     /****
      *
      **/
@@ -27,9 +25,6 @@ class ProgrammingService
         channel = onDemandService.activateChannelIfNeeded(moment, channel);
         return helperFuncs.getCurrentProgramAndTimeElapsed(moment, channel);
     }
-
-
-
 }
 
-module.exports = ProgrammingService
+module.exports = ProgrammingService;

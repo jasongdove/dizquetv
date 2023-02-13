@@ -1,6 +1,6 @@
 //Adds a slight pause so that long operations
-module.exports = function() {
+module.exports = function () {
     return new Promise((resolve) => {
         setImmediate(() => resolve());
     });
-}
+};
