@@ -160,8 +160,8 @@ jobs:
         include:
           - os: ubuntu-latest
             target: linux-x64
-          - os: ubuntu-latest
-            target: linux-arm64
+#          - os: ubuntu-latest
+#            target: linux-arm64
           - os: ubuntu-latest
             target: win-x64
     steps:
