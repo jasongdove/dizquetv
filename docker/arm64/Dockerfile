@@ -1,7 +1,7 @@
 FROM arm64v8/node:18.14-bullseye
+RUN apt update && apt install -y python3 build-essential && ln -sf /usr/bin/python3 /usr/bin/python
 WORKDIR /home/node/app
 COPY package*.json ./
-RUN apt update && apt install -y python3 build-essential && ln -sf /usr/bin/python3 /usr/bin/python
 RUN npm ci && npm install -g browserify pkg
 COPY . .
 ARG INFO_VERSION="unknown"
