@@ -1,4 +1,4 @@
-import Plex from "../../src/plex";
+import Plex from "../../src/plex.js";
 
 export default function ($http, $window, $interval) {
     const exported = {

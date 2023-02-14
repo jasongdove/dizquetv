@@ -1,5 +1,5 @@
-import { getProgramLastPlayTime, getFillerLastPlayTime } from "./channel-cache";
-import { SLACK } from "./constants";
+import { getProgramLastPlayTime, getFillerLastPlayTime } from "./channel-cache.js";
+import { SLACK } from "./constants.js";
 import { Random as _Random, MersenneTwister19937 } from "random-js";
 const Random = _Random;
 const random = new Random(MersenneTwister19937.autoSeed());

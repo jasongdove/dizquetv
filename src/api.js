@@ -1,16 +1,16 @@
 import { Router } from "express";
 import { join } from "path";
 import { readFileSync } from "fs";
-import { defaultFFMPEG } from "./database-migration";
-import { VERSION_NAME } from "./constants";
+import { defaultFFMPEG } from "./database-migration.js";
+import { VERSION_NAME } from "./constants.js";
 import { stringify } from "JSONStream";
-import FFMPEGInfo from "./ffmpeg-info";
-import PlexServerDB from "./dao/plex-server-db";
+import FFMPEGInfo from "./ffmpeg-info.js";
+import PlexServerDB from "./dao/plex-server-db.js";
 import Plex from "./plex.js";
 
-import timeSlotsService from "./services/time-slots-service";
-import randomSlotsService from "./services/random-slots-service";
-import throttle from "./services/throttle";
+import timeSlotsService from "./services/time-slots-service.js";
+import randomSlotsService from "./services/random-slots-service.js";
+import throttle from "./services/throttle.js";
 
 function safeString(object) {
     let o = object;

@@ -79,7 +79,7 @@ function getDevice(db, host) {
         LineupURL: `${host}/lineup.json`,
     };
     device.getXml = () => {
-        str = `<root xmlns="urn:schemas-upnp-org:device-1-0">
+        const str = `<root xmlns="urn:schemas-upnp-org:device-1-0">
       <URLBase>${device.BaseURL}</URLBase>
       <specVersion>
       <major>1</major>

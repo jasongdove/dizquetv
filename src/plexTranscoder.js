@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { get, post } from "axios";
+import axios from "axios";
 import { access, F_OK } from "fs";
 
 class PlexTranscoder {
@@ -300,9 +300,10 @@ lang=en`;
     async getAudioIndex() {
         let index = "a";
 
-        await get(`${this.server.uri}${this.key}?X-Plex-Token=${this.server.accessToken}`, {
-            headers: { Accept: "application/json" },
-        })
+        await axios
+            .get(`${this.server.uri}${this.key}?X-Plex-Token=${this.server.accessToken}`, {
+                headers: { Accept: "application/json" },
+            })
             .then((res) => {
                 this.log(res.data);
                 try {
@@ -328,12 +329,12 @@ lang=en`;
     }
 
     async getDirectInfo() {
-        return (await get(this.metadataPath)).data;
+        return (await axios.get(this.metadataPath)).data;
     }
 
     async getDecisionUnmanaged(directPlay) {
         const url = `${this.server.uri}/video/:/transcode/universal/decision?${this.transcodingArgs}`;
-        const res = await get(url, {
+        const res = await axios.get(url, {
             headers: { Accept: "application/json" },
         });
         this.decisionJson = res.data;
@@ -362,7 +363,7 @@ lang=en`;
         try {
             this.log("Try to detect audio only:");
             const url = `${this.server.uri}${this.key}?${this.transcodingArgs}`;
-            const res = await get(url, {
+            const res = await axios.get(url, {
                 headers: { Accept: "application/json" },
             });
 
@@ -438,7 +439,7 @@ X-Plex-Token=${this.server.accessToken}`;
         this.log("Updating plex status");
         const statusUrl = this.getStatusUrl();
         try {
-            post(statusUrl);
+            axios.post(statusUrl);
         } catch (error) {
             this.log(`Problem updating Plex status using status URL ${statusUrl}:`);
             this.log(error);

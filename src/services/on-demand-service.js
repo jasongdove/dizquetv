@@ -1,4 +1,4 @@
-import { SLACK as _SLACK } from "../constants";
+import { SLACK as _SLACK } from "../constants.js";
 
 const SLACK = _SLACK;
 

@@ -1,4 +1,4 @@
-import { FORGETFULNESS_BUFFER, PLAYED_MONITOR_CHECK_FREQUENCY, MAX_CHANNEL_IDLE } from "../constants";
+import { FORGETFULNESS_BUFFER, PLAYED_MONITOR_CHECK_FREQUENCY, MAX_CHANNEL_IDLE } from "../constants.js";
 
 /* Keeps track of which channels are being played, calls on-demand service
  when they stop playing.
@@ -34,7 +34,7 @@ class ActiveChannelService {
     async shutdown() {
         try {
             const t = new Date().getTime() - FORGETFULNESS_BUFFER;
-            for (const [channelNumber, value] of Object.entries(this.cache)) {
+            for (const [channelNumber] of Object.entries(this.cache)) {
                 console.log("Forcefully registering channel " + channelNumber + " as stopped...");
                 delete this.cache[channelNumber];
                 await this.onDemandService.registerChannelStopped(channelNumber, t, true);
@@ -53,7 +53,7 @@ class ActiveChannelService {
             const delta = t - value.lastUpdate;
             if (delta >= MAX_CHANNEL_IDLE || value.lastUpdate <= this.timeNoDelta) {
                 console.log("Channel : " + channelNumber + " is not playing...");
-                onDemandService.registerChannelStopped(channelNumber, value.stopTime);
+                this.onDemandService.registerChannelStopped(channelNumber, value.stopTime);
                 delete this.cache[channelNumber];
             }
         }

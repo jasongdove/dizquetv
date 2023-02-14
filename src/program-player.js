@@ -18,10 +18,10 @@
  * deal with the thrown error.
  **/
 
-import OfflinePlayer from "./offline-player";
-import PlexPlayer from "./plex-player";
+import OfflinePlayer from "./offline-player.js";
+import PlexPlayer from "./plex-player.js";
 import EventEmitter from "events";
-import { getWatermark } from "./helperFuncs";
+import { getWatermark } from "./helperFuncs.js";
 
 class ProgramPlayer {
     constructor(context) {

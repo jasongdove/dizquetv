@@ -5,7 +5,7 @@ import {
     getChannelConfig,
     getAllNumbers,
     getAllChannels as _getAllChannels,
-} from "../channel-cache";
+} from "../channel-cache.js";
 
 class ChannelService extends EventEmitter {
     constructor(channelDB) {

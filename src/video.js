@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { generateChannelContext, createLineup } from "./helperFuncs";
-import FFMPEG from "./ffmpeg";
-import FFMPEG_TEXT from "./ffmpegText";
-import { SLACK, START_CHANNEL_GRACE_PERIOD, CHANNEL_STOP_SHIELD, FORGETFULNESS_BUFFER } from "./constants";
+import { generateChannelContext, createLineup } from "./helperFuncs.js";
+import FFMPEG from "./ffmpeg.js";
+import FFMPEG_TEXT from "./ffmpegText.js";
+import { SLACK, START_CHANNEL_GRACE_PERIOD, CHANNEL_STOP_SHIELD, FORGETFULNESS_BUFFER } from "./constants.js";
 import { existsSync } from "fs";
-import ProgramPlayer from "./program-player";
-import { getCurrentLineupItem, recordPlayback, clearPlayback } from "./channel-cache";
-import wereThereTooManyAttempts from "./throttler";
+import ProgramPlayer from "./program-player.js";
+import { getCurrentLineupItem, recordPlayback, clearPlayback } from "./channel-cache.js";
+import wereThereTooManyAttempts from "./throttler.js";
 
 export const router = video;
 
@@ -194,6 +194,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
         let brandChannel = channel;
         let redirectChannels = [];
         let upperBounds = [];
+        let lineupItem = null;
 
         const GAP_DURATION = 750;
         if (isLoading) {

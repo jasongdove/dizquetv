@@ -7,7 +7,7 @@
  * can be used to play the program.
  **/
 import EventEmitter from "events";
-import FFMPEG from "./ffmpeg";
+import FFMPEG from "./ffmpeg.js";
 
 class OfflinePlayer {
     constructor(error, context) {

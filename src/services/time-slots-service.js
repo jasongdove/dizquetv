@@ -1,8 +1,7 @@
-import { SLACK } from "../constants";
-
-const getShowData = require("./get-show-data")();
-import throttle from "./throttle";
-import { getShowShuffler, getShowOrderer } from "./show-orderers";
+import { SLACK } from "../constants.js";
+import { getShowData } from "./get-show-data.js";
+import throttle from "./throttle.js";
+import { getShowShuffler, getShowOrderer } from "./show-orderers.js";
 
 const MINUTE = 60 * 1000;
 const DAY = 24 * 60 * MINUTE;

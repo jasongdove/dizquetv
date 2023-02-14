@@ -1,4 +1,4 @@
-import { SLACK } from "./constants";
+import { SLACK } from "./constants.js";
 
 let cache = {};
 const programPlayTimeCache = {};
@@ -6,7 +6,7 @@ const fillerPlayTimeCache = {};
 let configCache = {};
 let numbers = null;
 
-async function getChannelConfig(channelDB, channelId) {
+export async function getChannelConfig(channelDB, channelId) {
     // with lazy-loading
 
     if (typeof configCache[channelId] === "undefined") {
@@ -22,7 +22,7 @@ async function getChannelConfig(channelDB, channelId) {
     return configCache[channelId];
 }
 
-async function getAllNumbers(channelDB) {
+export async function getAllNumbers(channelDB) {
     if (numbers === null) {
         const n = await channelDB.getAllChannelNumbers();
         numbers = n;

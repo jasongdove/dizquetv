@@ -1,6 +1,6 @@
 import EventEmitter from "events";
 
-class EventsService {
+export default class EventsService {
     constructor() {
         this.stream = new EventEmitter();
         const that = this;
@@ -39,5 +39,3 @@ class EventsService {
         this.stream.emit("push", event, data);
     }
 }
-
-export default EventsService;

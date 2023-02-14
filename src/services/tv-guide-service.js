@@ -3,12 +3,13 @@ import {
     TVGUIDE_MAXIMUM_PADDING_LENGTH_MS,
     TVGUIDE_MAXIMUM_FLEX_DURATION,
     DEFAULT_GUIDE_STEALTH_DURATION,
-} from "../constants";
+} from "../constants.js";
 const FALLBACK_ICON = "https://raw.githubusercontent.com/vexorain/dizquetv/main/resources/dizquetv.png";
-import throttle from "./throttle";
+import throttle from "./throttle.js";
+import { WriteXMLTV } from "../xmltv.js";
 
 class TVGuideService extends EventEmitter {
-    constructor(xmltv, db, cacheImageService, eventService, i18next) {
+    constructor(db, cacheImageService, eventService, i18next) {
         super();
         this.cached = null;
         this.lastUpdate = 0;
@@ -16,7 +17,6 @@ class TVGuideService extends EventEmitter {
         this.currentUpdate = -1;
         this.currentLimit = -1;
         this.currentChannels = null;
-        this.xmltv = xmltv;
         this.db = db;
         this.cacheImageService = cacheImageService;
         this.eventService = eventService;
@@ -59,7 +59,7 @@ class TVGuideService extends EventEmitter {
                 this.currentLimit = this.updateLimit;
                 this.currentChannels = this.updateChannels;
                 const t = "" + new Date();
-                eventService.push("xmltv", {
+                this.eventService?.push("xmltv", {
                     message: `Started building tv-guide at = ${t}`,
                     module: "xmltv",
                     detail: {
@@ -438,15 +438,10 @@ class TVGuideService extends EventEmitter {
 
     async refreshXML() {
         const xmltvSettings = this.db["xmltv-settings"].find()[0];
-        await this.xmltv.WriteXMLTV(
-            this.cached,
-            xmltvSettings,
-            async () => await this._throttle(),
-            this.cacheImageService,
-        );
+        await WriteXMLTV(this.cached, xmltvSettings, async () => await this._throttle(), this.cacheImageService);
         const t = "" + new Date();
         this.emit("xmltv-updated", { time: t });
-        eventService.push("xmltv", {
+        this.eventService?.push("xmltv", {
             message: this.i18next.t("tvGuide.xmltv_updated", { t }),
             module: "xmltv",
             detail: {

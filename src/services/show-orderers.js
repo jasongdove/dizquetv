@@ -1,14 +1,9 @@
-import { random } from "../helperFuncs";
-const getShowData = require("./get-show-data")();
+import { random } from "../helperFuncs.js";
+import { getShowData } from "./get-show-data.js";
 import { Random as _Random, MersenneTwister19937 } from "random-js";
 const Random = _Random;
 
-/** **
- *
- *  Code shared by random slots and time slots for keeping track of the order
- * of episodes
- *
- **/
+// Code shared by random slots and time slots for keeping track of the order of episodes
 function shuffle(array, lo, hi, randomOverride) {
     let r = randomOverride;
     if (typeof r === "undefined") {

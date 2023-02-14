@@ -1,33 +1,41 @@
-import db, { connect } from "diskdb";
+import db from "diskdb";
+
+import bodyParser from "body-parser";
+
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join, resolve as _resolve } from "path";
 import express from "express";
-import { json } from "body-parser";
 import fileUpload from "express-fileupload";
 import i18next, { use, t as _t } from "i18next";
 import { LanguageDetector, handle } from "i18next-http-middleware/cjs";
 import i18nextBackend from "i18next-fs-backend/cjs";
 
-import { router } from "./src/api";
-import { initDB as _initDB } from "./src/database-migration";
-import { router as _router, shutdown } from "./src/video";
-import HDHR from "./src/hdhr";
-import FileCacheService from "./src/services/file-cache-service";
-import CacheImageService from "./src/services/cache-image-service";
-import ChannelService from "./src/services/channel-service";
+import { router } from "./src/api.js";
+import { initDB as _initDB } from "./src/database-migration.js";
+import { router as _router, shutdown } from "./src/video.js";
+import HDHR from "./src/hdhr.js";
+import FileCacheService from "./src/services/file-cache-service.js";
+import CacheImageService from "./src/services/cache-image-service.js";
+import ChannelService from "./src/services/channel-service.js";
 
-import xmltv, { shutdown as _shutdown } from "./src/xmltv";
-import Plex from "./src/plex";
-import { VERSION_NAME } from "./src/constants";
-import ChannelDB from "./src/dao/channel-db";
-import M3uService from "./src/services/m3u-service";
-import FillerDB from "./src/dao/filler-db";
-import CustomShowDB from "./src/dao/custom-show-db";
-import TVGuideService from "./src/services/tv-guide-service";
-import EventService from "./src/services/event-service";
-import OnDemandService from "./src/services/on-demand-service";
-import ProgrammingService from "./src/services/programming-service";
-import ActiveChannelService from "./src/services/active-channel-service";
+import { shutdown as _shutdown } from "./src/xmltv.js";
+import Plex from "./src/plex.js";
+import { VERSION_NAME } from "./src/constants.js";
+import ChannelDB from "./src/dao/channel-db.js";
+import M3uService from "./src/services/m3u-service.js";
+import FillerDB from "./src/dao/filler-db.js";
+import CustomShowDB from "./src/dao/custom-show-db.js";
+import TVGuideService from "./src/services/tv-guide-service.js";
+import EventService from "./src/services/event-service.js";
+import OnDemandService from "./src/services/on-demand-service.js";
+import ProgrammingService from "./src/services/programming-service.js";
+import ActiveChannelService from "./src/services/active-channel-service.js";
 
 import { onShutdown } from "node-graceful-shutdown";
 
@@ -60,6 +68,8 @@ for (let i = 0, l = process.argv.length; i < l; i++) {
 process.env.DATABASE = process.env.DATABASE || join(".", ".dizquetv");
 process.env.PORT = process.env.PORT || 8000;
 
+console.log(process.env.DATABASE);
+
 if (!existsSync(process.env.DATABASE)) {
     if (existsSync(join(".", ".pseudotv"))) {
         throw Error(
@@ -91,9 +101,9 @@ if (!existsSync(join(process.env.DATABASE, "cache", "images"))) {
     mkdirSync(join(process.env.DATABASE, "cache", "images"));
 }
 
-channelDB = new ChannelDB(join(process.env.DATABASE, "channels"));
+const channelDB = new ChannelDB(join(process.env.DATABASE, "channels"));
 
-connect(process.env.DATABASE, [
+db.connect(process.env.DATABASE, [
     "channels",
     "plex-servers",
     "ffmpeg-settings",
@@ -107,20 +117,20 @@ connect(process.env.DATABASE, [
 ]);
 initDB(db, channelDB);
 
-channelService = new ChannelService(channelDB);
+const channelService = new ChannelService(channelDB);
 
-fillerDB = new FillerDB(join(process.env.DATABASE, "filler"), channelService);
-customShowDB = new CustomShowDB(join(process.env.DATABASE, "custom-shows"));
+const fillerDB = new FillerDB(join(process.env.DATABASE, "filler"), channelService);
+const customShowDB = new CustomShowDB(join(process.env.DATABASE, "custom-shows"));
 
-fileCache = new FileCacheService(join(process.env.DATABASE, "cache"));
-cacheImageService = new CacheImageService(db, fileCache);
-m3uService = new M3uService(fileCache, channelService);
+const fileCache = new FileCacheService(join(process.env.DATABASE, "cache"));
+const cacheImageService = new CacheImageService(db, fileCache);
+const m3uService = new M3uService(fileCache, channelService);
 
-onDemandService = new OnDemandService(channelService);
-programmingService = new ProgrammingService(onDemandService);
-activeChannelService = new ActiveChannelService(onDemandService, channelService);
+const onDemandService = new OnDemandService(channelService);
+const programmingService = new ProgrammingService(onDemandService);
+const activeChannelService = new ActiveChannelService(onDemandService, channelService);
 
-eventService = new EventService();
+const eventService = new EventService();
 
 use(i18nextBackend)
     .use(LanguageDetector)
@@ -136,7 +146,7 @@ use(i18nextBackend)
         preload: ["en"],
     });
 
-const guideService = new TVGuideService(xmltv, db, cacheImageService, null, i18next);
+const guideService = new TVGuideService(db, cacheImageService, null, i18next);
 
 const xmltvInterval = {
     interval: null,
@@ -161,7 +171,7 @@ const xmltvInterval = {
         xmltvInterval.lastRefresh = new Date();
         console.log("XMLTV Updated at ", xmltvInterval.lastRefresh.toLocaleString());
 
-        channels = await channelService.getAllChannels();
+        const channels = await channelService.getAllChannels();
 
         const plexServers = db["plex-servers"].find();
         for (let i = 0, l = plexServers.length; i < l; i++) {
@@ -255,7 +265,7 @@ app.use(
         createParentPath: true,
     }),
 );
-app.use(json({ limit: "50mb" }));
+app.use(bodyParser.json({ limit: "50mb" }));
 
 app.get("/version.js", (req, res) => {
     res.writeHead(200, {

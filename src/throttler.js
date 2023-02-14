@@ -1,4 +1,4 @@
-import { TOO_FREQUENT } from "./constants";
+import { TOO_FREQUENT } from "./constants.js";
 
 const cache = {};
 

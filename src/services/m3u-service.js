@@ -3,7 +3,7 @@
  *
  * @class M3uService
  */
-class M3uService {
+export default class M3uService {
     constructor(fileCacheService, channelService) {
         this.channelService = channelService;
         this.cacheService = fileCacheService;
@@ -92,5 +92,3 @@ class M3uService {
         this.cacheReady = false;
     }
 }
-
-module.exports = M3uService;

@@ -4,7 +4,7 @@ const ICON_REGEX = /https?:\/\/.*(\/library\/metadata\/\d+\/thumb\/\d+).X-Plex-T
 const ICON_FIELDS = ["icon", "showIcon", "seasonIcon", "episodeIcon"];
 
 // DB is a misnomer here, this is closer to a service
-class PlexServerDB {
+export default class PlexServerDB {
     constructor(channelService, fillerDB, showDB, db) {
         this.channelService = channelService;
         this.db = db;
@@ -235,5 +235,3 @@ class PlexServerDB {
         }
     }
 }
-
-module.exports = PlexServerDB;

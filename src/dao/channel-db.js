@@ -1,7 +1,7 @@
 import { join, basename, extname } from "path";
 import { readFile, writeFile, writeFileSync, unlink, readdir } from "fs";
 
-class ChannelDB {
+export default class ChannelDB {
     constructor(folder) {
         this.folder = folder;
     }
@@ -109,5 +109,3 @@ class ChannelDB {
         return await Promise.all(numbers.map(async (c) => this.getChannel(c)));
     }
 }
-
-export default ChannelDB;
