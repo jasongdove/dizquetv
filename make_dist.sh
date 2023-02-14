@@ -1,6 +1,7 @@
 #!/bin/sh
 
 ARCH="${1:-linux-x64}"
+OUTPUT="${2:-dizquetv}"
 
 rm -rf dist
 
@@ -11,6 +12,6 @@ cp -r web dist/web
 cp -r resources dist/
 cp -r locales/ dist/locales/
 cp pkg.json dist/
-cd dist
+cd dist || exit 1
 
-pkg index.js -c pkg.json --no-bytecode --public-packages "*" --public -t node12-$ARCH -o dizquetv
+pkg index.js -c pkg.json --no-bytecode --public-packages "*" --public -t "node18-$ARCH" -o "$OUTPUT"

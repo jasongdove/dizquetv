@@ -1,4 +1,4 @@
-FROM arm64v8/node:12.18-buster
+FROM arm64v8/node:18.14-bullseye
 WORKDIR /home/node/app
 COPY package*.json ./
 RUN apt update && apt install -y python3 build-essential && ln -sf /usr/bin/python3 /usr/bin/python
