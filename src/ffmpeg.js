@@ -29,27 +29,27 @@ class FFMPEG extends events.EventEmitter {
         let resString = opts.targetResolution;
         if (
             typeof channel.transcoding !== "undefined" &&
-            channel.transcoding.targetResolution != null &&
+            channel.transcoding.targetResolution !== null &&
             typeof channel.transcoding.targetResolution !== "undefined" &&
-            channel.transcoding.targetResolution != ""
+            channel.transcoding.targetResolution !== ""
         ) {
             resString = channel.transcoding.targetResolution;
         }
 
         if (
             typeof channel.transcoding !== "undefined" &&
-            channel.transcoding.videoBitrate != null &&
+            channel.transcoding.videoBitrate !== null &&
             typeof channel.transcoding.videoBitrate !== "undefined" &&
-            channel.transcoding.videoBitrate != 0
+            channel.transcoding.videoBitrate !== 0
         ) {
             opts.videoBitrate = channel.transcoding.videoBitrate;
         }
 
         if (
             typeof channel.transcoding !== "undefined" &&
-            channel.transcoding.videoBufSize != null &&
+            channel.transcoding.videoBufSize !== null &&
             typeof channel.transcoding.videoBufSize !== "undefined" &&
-            channel.transcoding.videoBufSize != 0
+            channel.transcoding.videoBufSize !== 0
         ) {
             opts.videoBufSize = channel.transcoding.videoBufSize;
         }
@@ -72,15 +72,15 @@ class FFMPEG extends events.EventEmitter {
     }
 
     async spawnConcat(streamUrl) {
-        return await this.spawn(streamUrl, undefined, undefined, undefined, true, false, undefined, true);
+        await this.spawn(streamUrl, undefined, undefined, undefined, true, false, undefined, true);
     }
 
     async spawnStream(streamUrl, streamStats, startTime, duration, enableIcon, type) {
-        return await this.spawn(streamUrl, streamStats, startTime, duration, true, enableIcon, type, false);
+        await this.spawn(streamUrl, streamStats, startTime, duration, true, enableIcon, type, false);
     }
 
     async spawnError(title, subtitle, duration) {
-        if (!this.opts.enableFFMPEGTranscoding || this.opts.errorScreen == "kill") {
+        if (!this.opts.enableFFMPEGTranscoding || this.opts.errorScreen === "kill") {
             console.error("error: " + title + " ; " + subtitle);
             this.emit("error", { code: -1, cmd: `error stream disabled. ${title} ${subtitle}` });
             return;
@@ -96,7 +96,7 @@ class FFMPEG extends events.EventEmitter {
             videoHeight: this.wantedH,
             duration,
         };
-        return await this.spawn(
+        await this.spawn(
             { errorTitle: title, subtitle },
             streamStats,
             undefined,
@@ -122,7 +122,7 @@ class FFMPEG extends events.EventEmitter {
             videoHeight: this.wantedH,
             duration,
         };
-        return await this.spawn(
+        await this.spawn(
             { errorTitle: "offline" },
             streamStats,
             undefined,
@@ -149,7 +149,7 @@ class FFMPEG extends events.EventEmitter {
 
         if (typeof startTime !== "undefined") ffmpegArgs.push(`-ss`, startTime);
 
-        if (isConcatPlaylist == true)
+        if (isConcatPlaylist === true)
             ffmpegArgs.push(`-f`, `concat`, `-safe`, `0`, `-protocol_whitelist`, `file,http,tcp,https,tcp,tls`);
 
         // Map correct audio index. '?' so doesn't fail if no stream available.
@@ -170,7 +170,7 @@ class FFMPEG extends events.EventEmitter {
             // When we have an individual stream, there is a pipeline of possible
             // filters to apply.
             //
-            let doOverlay = typeof watermark === "undefined" || watermark != null;
+            let doOverlay = typeof watermark === "undefined" || watermark !== null;
             let iW = streamStats.videoWidth;
             let iH = streamStats.videoHeight;
 
@@ -197,7 +197,7 @@ class FFMPEG extends events.EventEmitter {
             }
 
             // deinterlace if desired
-            if (streamStats.videoScanType == "interlaced" && this.opts.deinterlaceFilter != "none") {
+            if (streamStats.videoScanType === "interlaced" && this.opts.deinterlaceFilter !== "none") {
                 videoComplex += `;${currentVideo}${this.opts.deinterlaceFilter}[deinterlaced]`;
                 currentVideo = "[deinterlaced]";
             }
@@ -209,7 +209,7 @@ class FFMPEG extends events.EventEmitter {
                 this.apad = false; // all of these generate audio correctly-aligned to video so there is no need for apad
                 this.audioChannelsSampleRate = true; // we'll need these
 
-                // all of the error strings already choose the resolution to
+                // all the error strings already choose the resolution to
                 // match iW x iH , so with this we save ourselves a second
                 // scale filter
                 iW = this.wantedW;
@@ -222,13 +222,13 @@ class FFMPEG extends events.EventEmitter {
                     // does an image to play exist?
                     if (typeof streamUrl.errorTitle === "undefined" && streamStats.audioOnly) {
                         pic = streamStats.placeholderImage;
-                    } else if (streamUrl.errorTitle == "offline") {
+                    } else if (streamUrl.errorTitle === "offline") {
                         pic = `${this.channel.offlinePicture}`;
-                    } else if (this.opts.errorScreen == "pic") {
+                    } else if (this.opts.errorScreen === "pic") {
                         pic = `${this.errorPicturePath}`;
                     }
 
-                    if (pic != null) {
+                    if (pic !== null) {
                         ffmpegArgs.push("-i", pic);
                         if (typeof duration === "undefined" && typeof streamStats.duration !== "undefined") {
                             // add 150 milliseconds just in case, exact duration seems to cut out the last bits of music some times.
@@ -242,15 +242,15 @@ class FFMPEG extends events.EventEmitter {
                         // this tune apparently makes the video compress better
                         // when it is the same image
                         stillImage = true;
-                    } else if (this.opts.errorScreen == "static") {
+                    } else if (this.opts.errorScreen === "static") {
                         ffmpegArgs.push("-f", "lavfi", "-i", `nullsrc=s=64x36`);
                         videoComplex = `;geq=random(1)*255:128:128[videoz];[videoz]scale=${iW}:${iH}[videoy];[videoy]realtime[videox]`;
                         inputFiles++;
-                    } else if (this.opts.errorScreen == "testsrc") {
+                    } else if (this.opts.errorScreen === "testsrc") {
                         ffmpegArgs.push("-f", "lavfi", "-i", `testsrc=size=${iW}x${iH}`);
                         videoComplex = `;realtime[videox]`;
                         inputFiles++;
-                    } else if (this.opts.errorScreen == "text") {
+                    } else if (this.opts.errorScreen === "text") {
                         const sz2 = Math.ceil(iH / 33.0);
                         const sz1 = Math.ceil((sz2 * 3) / 2);
                         const sz3 = 2 * sz2;
@@ -270,10 +270,10 @@ class FFMPEG extends events.EventEmitter {
                 if (typeof streamUrl.errorTitle !== "undefined") {
                     // silent
                     audioComplex = `;aevalsrc=0:${durstr}[audioy]`;
-                    if (streamUrl.errorTitle == "offline") {
+                    if (streamUrl.errorTitle === "offline") {
                         if (
                             typeof this.channel.offlineSoundtrack !== "undefined" &&
-                            this.channel.offlineSoundtrack != ""
+                            this.channel.offlineSoundtrack !== ""
                         ) {
                             ffmpegArgs.push("-i", `${this.channel.offlineSoundtrack}`);
                             // I don't really understand why, but you need to use this
@@ -281,12 +281,12 @@ class FFMPEG extends events.EventEmitter {
                             audioComplex = `;[${inputFiles++}:a]aloop=loop=-1:size=2147483647[audioy]`;
                         }
                     } else if (
-                        this.opts.errorAudio == "whitenoise" ||
-                        (!(this.opts.errorAudio == "sine") && this.audioOnly === true) // when it's in audio-only mode, silent stream is confusing for errors.
+                        this.opts.errorAudio === "whitenoise" ||
+                        (!(this.opts.errorAudio === "sine") && this.audioOnly === true) // when it's in audio-only mode, silent stream is confusing for errors.
                     ) {
                         audioComplex = `;aevalsrc=random(0):${durstr}[audioy]`;
                         this.volumePercent = Math.min(70, this.volumePercent);
-                    } else if (this.opts.errorAudio == "sine") {
+                    } else if (this.opts.errorAudio === "sine") {
                         audioComplex = `;sine=f=440:${durstr}[audioy]`;
                         this.volumePercent = Math.min(70, this.volumePercent);
                     }
@@ -313,7 +313,7 @@ class FFMPEG extends events.EventEmitter {
             let resizeMsg = "";
             if (
                 !streamStats.audioOnly &&
-                ((this.ensureResolution && (streamStats.anamorphic || iW != this.wantedW || iH != this.wantedH)) ||
+                ((this.ensureResolution && (streamStats.anamorphic || iW !== this.wantedW || iH !== this.wantedH)) ||
                     isLargerResolution(iW, iH, this.wantedW, this.wantedH))
             ) {
                 // scaler stuff, need to change the size of the video and also add bars
@@ -343,7 +343,7 @@ class FFMPEG extends events.EventEmitter {
                     console.log(
                         `First stretch to ${cw} x ${ch}. Then add padding to make it ${this.wantedW} x ${this.wantedH} `,
                     );
-                } else if (cw % 2 == 1 || ch % 2 == 1) {
+                } else if (cw % 2 === 1 || ch % 2 === 1) {
                     // we need to add padding so that the video dimensions are even
                     const xw = cw + (cw % 2);
                     const xh = ch + (ch % 2);
@@ -353,13 +353,13 @@ class FFMPEG extends events.EventEmitter {
                 } else {
                     resizeMsg = `Stretch to ${cw} x ${ch}. To fit target resolution of ${this.wantedW} x ${this.wantedH}.`;
                 }
-                if (this.wantedW != cw || this.wantedH != ch) {
+                if (this.wantedW !== cw || this.wantedH !== ch) {
                     // also add black bars, because in this case it HAS to be this resolution
                     videoComplex += `;[${currentVideo}]pad=${this.wantedW}:${this.wantedH}:(ow-iw)/2:(oh-ih)/2[blackpadded]`;
                     currentVideo = "blackpadded";
                 }
                 let name = "siz";
-                if (!this.ensureResolution && beforeSizeChange != "[fpchange]") {
+                if (!this.ensureResolution && beforeSizeChange !== "[fpchange]") {
                     name = "minsiz";
                 }
                 videoComplex += `;[${currentVideo}]setsar=1[${name}]`;
@@ -404,7 +404,7 @@ class FFMPEG extends events.EventEmitter {
                 currentVideo = "[comb]";
             }
 
-            if (this.volumePercent != 100) {
+            if (this.volumePercent !== 100) {
                 const f = this.volumePercent / 100.0;
                 audioComplex += `;${currentAudio}volume=${f}[boosted]`;
                 currentAudio = "[boosted]";
@@ -429,7 +429,7 @@ class FFMPEG extends events.EventEmitter {
             let transcodeVideo =
                 this.opts.normalizeVideoCodec && isDifferentVideoCodec(streamStats.videoCodec, this.opts.videoEncoder);
             let filterComplex = "";
-            if (!transcodeVideo && currentVideo == "[minsiz]") {
+            if (!transcodeVideo && currentVideo === "[minsiz]") {
                 // do not change resolution if no other transcoding will be done
                 // and resolution normalization is off
                 currentVideo = beforeSizeChange;
@@ -437,15 +437,16 @@ class FFMPEG extends events.EventEmitter {
                 console.log(resizeMsg);
             }
             if (this.audioOnly !== true) {
-                if (currentVideo != "[video]") {
-                    transcodeVideo = true; // this is useful so that it adds some lines below
+                if (currentVideo !== "[video]") {
+                    // this is useful so that it adds some lines below
+                    transcodeVideo = true;
                     filterComplex += videoComplex;
                 } else {
                     currentVideo = `${videoFile}:${videoIndex}`;
                 }
             }
             // same with audio:
-            if (currentAudio != "[audio]") {
+            if (currentAudio !== "[audio]") {
                 transcodeAudio = true;
                 filterComplex += audioComplex;
             } else {
@@ -453,7 +454,7 @@ class FFMPEG extends events.EventEmitter {
             }
 
             // If there is a filter complex, add it.
-            if (filterComplex != "") {
+            if (filterComplex !== "") {
                 ffmpegArgs.push(`-filter_complex`, filterComplex.slice(1));
                 if (this.alignAudio) {
                     ffmpegArgs.push("-shortest");
@@ -469,7 +470,7 @@ class FFMPEG extends events.EventEmitter {
                     `1000000000`,
                 );
                 // -tune stillimage only applies to libx264
-                if (stillImage && this.opts.videoEncoder.toLowerCase() == "libx264") {
+                if (stillImage && this.opts.videoEncoder.toLowerCase() === "libx264") {
                     ffmpegArgs.push("-tune", "stillimage");
                 }
             }
@@ -600,11 +601,11 @@ class FFMPEG extends events.EventEmitter {
 }
 
 function isDifferentVideoCodec(codec, encoder) {
-    if (codec == "mpeg2video") {
+    if (codec === "mpeg2video") {
         return !encoder.includes("mpeg2");
-    } else if (codec == "h264") {
+    } else if (codec === "h264") {
         return !encoder.includes("264");
-    } else if (codec == "hevc") {
+    } else if (codec === "hevc") {
         return !(encoder.includes("265") || encoder.includes("hevc"));
     }
     // if the encoder/codec combinations are unknown, always encode, just in case
@@ -612,13 +613,13 @@ function isDifferentVideoCodec(codec, encoder) {
 }
 
 function isDifferentAudioCodec(codec, encoder) {
-    if (codec == "mp3") {
+    if (codec === "mp3") {
         return !(encoder.includes("mp3") || encoder.includes("lame"));
-    } else if (codec == "aac") {
+    } else if (codec === "aac") {
         return !encoder.includes("aac");
-    } else if (codec == "ac3") {
+    } else if (codec === "ac3") {
         return !encoder.includes("ac3");
-    } else if (codec == "flac") {
+    } else if (codec === "flac") {
         return !encoder.includes("flac");
     }
     // if the encoder/codec combinations are unknown, always encode, just in case
@@ -626,14 +627,14 @@ function isDifferentAudioCodec(codec, encoder) {
 }
 
 function isLargerResolution(w1, h1, w2, h2) {
-    return w1 > w2 || h1 > h2 || w1 % 2 == 1 || h1 % 2 == 1;
+    return w1 > w2 || h1 > h2 || w1 % 2 === 1 || h1 % 2 === 1;
 }
 
 function parseResolutionString(s) {
     let i = s.indexOf("x");
-    if (i == -1) {
+    if (i === -1) {
         i = s.indexOf("×");
-        if (i == -1) {
+        if (i === -1) {
             return { w: 1920, h: 1080 };
         }
     }
@@ -644,7 +645,7 @@ function parseResolutionString(s) {
 }
 
 function gcd(a, b) {
-    while (b != 0) {
+    while (b !== 0) {
         const c = b;
         b = a % b;
         a = c;
