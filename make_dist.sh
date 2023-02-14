@@ -13,4 +13,4 @@ cp -r locales/ dist/locales/
 cp pkg.json dist/
 cd dist
 
-pkg index.js -c pkg.json --no-bytecode --public-packages "*" --public -t node12-$ARCH -o dizquetv
+pkg index.js -c pkg.json --no-bytecode --public-packages "*" --public -t node18-$ARCH -o dizquetv

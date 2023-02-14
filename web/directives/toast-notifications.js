@@ -1,17 +1,14 @@
-module.exports = function ($timeout) {
+export default function ($timeout) {
     return {
-        restrict: 'E',
-        templateUrl: 'templates/toast-notifications.html',
+        restrict: "E",
+        templateUrl: "templates/toast-notifications.html",
         replace: true,
-        scope: {
-        },
+        scope: {},
         link: function (scope, element, attrs) {
-
             const FADE_IN_START = 100;
             const FADE_IN_END = 1000;
             const FADE_OUT_START = 10000;
             const TOTAL_DURATION = 11000;
-
 
             scope.toasts = [];
 
@@ -20,44 +17,43 @@ module.exports = function ($timeout) {
             let timerHandle = null;
             let refreshHandle = null;
 
-
-            let setResetTimer = () => {
+            const setResetTimer = () => {
                 if (timerHandle != null) {
-                    clearTimeout( timerHandle );
+                    clearTimeout(timerHandle);
                 }
-                timerHandle = setTimeout( () => {
+                timerHandle = setTimeout(() => {
                     scope.setup();
-                } , 10000);
+                }, 10000);
             };
 
-            let updateAfter = (wait) => {
+            const updateAfter = (wait) => {
                 if (refreshHandle != null) {
-                    $timeout.cancel( refreshHandle );
+                    $timeout.cancel(refreshHandle);
                 }
-                refreshHandle = $timeout( ()=> updater(), wait );
+                refreshHandle = $timeout(() => updater(), wait);
             };
 
-            let updater = () => {
+            const updater = () => {
                 let wait = 10000;
-                let updatedToasts = [];
+                const updatedToasts = [];
                 try {
-                    let t = (new Date()).getTime();
+                    const t = new Date().getTime();
                     for (let i = 0; i < scope.toasts.length; i++) {
-                        let toast = scope.toasts[i];
-                        let diff = t - toast.time;
+                        const toast = scope.toasts[i];
+                        const diff = t - toast.time;
                         if (diff < TOTAL_DURATION) {
                             if (diff < FADE_IN_START) {
-                                toast.clazz = { "about-to-fade-in" : true }
-                                wait = Math.min( wait, FADE_IN_START - diff );
+                                toast.clazz = { "about-to-fade-in": true };
+                                wait = Math.min(wait, FADE_IN_START - diff);
                             } else if (diff < FADE_IN_END) {
-                                toast.clazz = { "fade-in" : true }
-                                wait = Math.min( wait, FADE_IN_END - diff );
+                                toast.clazz = { "fade-in": true };
+                                wait = Math.min(wait, FADE_IN_END - diff);
                             } else if (diff < FADE_OUT_START) {
-                                toast.clazz = {}
-                                wait = Math.min( wait, FADE_OUT_START - diff );
+                                toast.clazz = {};
+                                wait = Math.min(wait, FADE_OUT_START - diff);
                             } else {
-                                toast.clazz = { "fade-out" : true }
-                                wait = Math.min( wait, TOTAL_DURATION - diff );
+                                toast.clazz = { "fade-out": true };
+                                wait = Math.min(wait, TOTAL_DURATION - diff);
                             }
                             toast.clazz[toast.deco] = true;
                             updatedToasts.push(toast);
@@ -70,17 +66,17 @@ module.exports = function ($timeout) {
                 updateAfter(wait);
             };
 
-            let addToast = (toast) => {
-                toast.time = (new Date()).getTime();
-                toast.clazz= { "about-to-fade-in": true };
+            const addToast = (toast) => {
+                toast.time = new Date().getTime();
+                toast.clazz = { "about-to-fade-in": true };
                 toast.clazz[toast.deco] = true;
                 scope.toasts.push(toast);
-                $timeout( () => updateAfter(0) );
+                $timeout(() => updateAfter(0));
             };
 
-            let getDeco = (data) => {
+            const getDeco = (data) => {
                 return "bg-" + data.level;
-            }
+            };
 
             scope.setup = () => {
                 if (eventSource != null) {
@@ -93,29 +89,29 @@ module.exports = function ($timeout) {
 
                 eventSource.addEventListener("heartbeat", () => {
                     setResetTimer();
-                } );
+                });
 
-                let normalEvent = (title) => {
+                const normalEvent = (title) => {
                     return (event) => {
-                        let data = JSON.parse(event.data);
-                        addToast ( {
-                            title : title,
-                            text : data.message,
-                            deco: getDeco(data)
-                        } )
+                        const data = JSON.parse(event.data);
+                        addToast({
+                            title: title,
+                            text: data.message,
+                            deco: getDeco(data),
+                        });
                     };
                 };
 
-                eventSource.addEventListener('settings-update',  normalEvent("Settings Update") );
-                eventSource.addEventListener('xmltv',  normalEvent("TV Guide") );
-                eventSource.addEventListener('lifecycle',  normalEvent("Server") );
+                eventSource.addEventListener("settings-update", normalEvent("Settings Update"));
+                eventSource.addEventListener("xmltv", normalEvent("TV Guide"));
+                eventSource.addEventListener("lifecycle", normalEvent("Server"));
             };
 
             scope.destroy = (index) => {
-                scope.toasts.splice(index,1);
-            }
+                scope.toasts.splice(index, 1);
+            };
 
             scope.setup();
-        }
+        },
     };
 }

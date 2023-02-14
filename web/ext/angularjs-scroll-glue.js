@@ -2,56 +2,50 @@
  * version 2.1.0
  * https://github.com/Luegg/angularjs-scroll-glue
  * An AngularJs directive that automatically scrolls to the bottom of an element on changes in it's scope.
-*/
+ */
+(function (angular, undefined) {
+    "use strict";
 
-// Allow module to be loaded via require when using common js. e.g. npm
-if(typeof module === "object" && module.exports){
-    module.exports = 'luegg.directives';
-}
-
-(function(angular, undefined){
-    'use strict';
-
-    function createActivationState($parse, attr, scope){
-        function unboundState(initValue){
-            var activated = initValue;
+    function createActivationState($parse, attr, scope) {
+        function unboundState(initValue) {
+            let activated = initValue;
             return {
-                getValue: function(){
+                getValue: function () {
                     return activated;
                 },
-                setValue: function(value){
+                setValue: function (value) {
                     activated = value;
-                }
+                },
             };
         }
 
-        function oneWayBindingState(getter, scope){
+        function oneWayBindingState(getter, scope) {
             return {
-                getValue: function(){
+                getValue: function () {
                     return getter(scope);
                 },
-                setValue: function(){}
+                setValue: function () {},
             };
         }
 
-        function twoWayBindingState(getter, setter, scope){
+        function twoWayBindingState(getter, setter, scope) {
             return {
-                getValue: function(){
+                getValue: function () {
                     return getter(scope);
                 },
-                setValue: function(value){
-                    if(value !== getter(scope)){
-                        scope.$apply(function(){
+                setValue: function (value) {
+                    if (value !== getter(scope)) {
+                        scope.$apply(function () {
                             setter(scope, value);
                         });
                     }
-                }
+                },
             };
         }
 
-        if(attr !== ""){
-            var getter = $parse(attr);
-            if(getter.assign !== undefined){
+        if (attr !== "") {
+            const getter = $parse(attr);
+            if (getter.assign !== undefined) {
                 return twoWayBindingState(getter, getter.assign, scope);
             } else {
                 return oneWayBindingState(getter, scope);
@@ -61,104 +55,114 @@ if(typeof module === "object" && module.exports){
         }
     }
 
-    function createDirective(module, attrName, direction){
-        module.directive(attrName, ['$parse', '$window', '$timeout', function($parse, $window, $timeout){
-            return {
-                priority: 1,
-                restrict: 'A',
-                link: function(scope, $el, attrs){
-                    var el = $el[0],
-                        activationState = createActivationState($parse, attrs[attrName], scope);
+    function createDirective(module, attrName, direction) {
+        module.directive(attrName, [
+            "$parse",
+            "$window",
+            "$timeout",
+            function ($parse, $window, $timeout) {
+                return {
+                    priority: 1,
+                    restrict: "A",
+                    link: function (scope, $el, attrs) {
+                        const el = $el[0];
+                        const activationState = createActivationState($parse, attrs[attrName], scope);
 
-                    function scrollIfGlued() {
-                        if(activationState.getValue() && !direction.isAttached(el)){
-                            // Ensures scroll after angular template digest
-                            $timeout(function() {
-                              direction.scroll(el);
-                            });
+                        function scrollIfGlued() {
+                            if (activationState.getValue() && !direction.isAttached(el)) {
+                                // Ensures scroll after angular template digest
+                                $timeout(function () {
+                                    direction.scroll(el);
+                                });
+                            }
                         }
-                    }
 
-                    function onScroll() {
-                        activationState.setValue(direction.isAttached(el));
-                    }
+                        function onScroll() {
+                            activationState.setValue(direction.isAttached(el));
+                        }
 
-                    $timeout(scrollIfGlued, 0, false);
+                        $timeout(scrollIfGlued, 0, false);
 
-                    if (!$el[0].hasAttribute('force-glue')) {
-                      $el.on('scroll', onScroll);
-                    }
+                        if (!$el[0].hasAttribute("force-glue")) {
+                            $el.on("scroll", onScroll);
+                        }
 
-                    var hasAnchor = false;
-                    angular.forEach($el.children(), function(child) {
-                      if (child.hasAttribute('scroll-glue-anchor')) {
-                        hasAnchor = true;
-                        scope.$watch(function() { return child.offsetHeight }, function() {
-                          scrollIfGlued();
+                        let hasAnchor = false;
+                        angular.forEach($el.children(), function (child) {
+                            if (child.hasAttribute("scroll-glue-anchor")) {
+                                hasAnchor = true;
+                                scope.$watch(
+                                    function () {
+                                        return child.offsetHeight;
+                                    },
+                                    function () {
+                                        scrollIfGlued();
+                                    },
+                                );
+                            }
                         });
-                      }
-                    });
 
-                    if (!hasAnchor) {
-                      scope.$watch(scrollIfGlued);
-                      $window.addEventListener('resize', scrollIfGlued, false);
-                    }
+                        if (!hasAnchor) {
+                            scope.$watch(scrollIfGlued);
+                            $window.addEventListener("resize", scrollIfGlued, false);
+                        }
 
-                    // Remove listeners on directive destroy
-                    $el.on('$destroy', function() {
-                        $el.unbind('scroll', onScroll);
-                    });
+                        // Remove listeners on directive destroy
+                        $el.on("$destroy", function () {
+                            $el.unbind("scroll", onScroll);
+                        });
 
-                    scope.$on('$destroy', function() {
-                        $window.removeEventListener('resize', scrollIfGlued, false);
-                    });
-                }
-            };
-        }]);
+                        scope.$on("$destroy", function () {
+                            $window.removeEventListener("resize", scrollIfGlued, false);
+                        });
+                    },
+                };
+            },
+        ]);
     }
 
-    var bottom = {
-        isAttached: function(el){
+    const bottom = {
+        isAttached: function (el) {
             // + 1 catches off by one errors in chrome
             return el.scrollTop + el.clientHeight + 1 >= el.scrollHeight;
         },
-        scroll: function(el){
+        scroll: function (el) {
             el.scrollTop = el.scrollHeight;
-        }
+        },
     };
 
-    var top = {
-        isAttached: function(el){
+    const top = {
+        isAttached: function (el) {
             return el.scrollTop <= 1;
         },
-        scroll: function(el){
+        scroll: function (el) {
             el.scrollTop = 0;
-        }
+        },
     };
 
-    var right = {
-        isAttached: function(el){
+    const right = {
+        isAttached: function (el) {
             return el.scrollLeft + el.clientWidth + 1 >= el.scrollWidth;
         },
-        scroll: function(el){
+        scroll: function (el) {
             el.scrollLeft = el.scrollWidth;
-        }
+        },
     };
 
-    var left = {
-        isAttached: function(el){
+    const left = {
+        isAttached: function (el) {
             return el.scrollLeft <= 1;
         },
-        scroll: function(el){
+        scroll: function (el) {
             el.scrollLeft = 0;
-        }
+        },
     };
 
-    var module = angular.module('luegg.directives', []);
+    const module = angular.module("luegg.directives", []);
 
-    createDirective(module, 'scrollGlue', bottom);
-    createDirective(module, 'scrollGlueTop', top);
-    createDirective(module, 'scrollGlueBottom', bottom);
-    createDirective(module, 'scrollGlueLeft', left);
-    createDirective(module, 'scrollGlueRight', right);
-}(angular));
+    createDirective(module, "scrollGlue", bottom);
+    createDirective(module, "scrollGlueTop", top);
+    createDirective(module, "scrollGlueBottom", bottom);
+    createDirective(module, "scrollGlueLeft", left);
+    createDirective(module, "scrollGlueRight", right);
+})(angular);

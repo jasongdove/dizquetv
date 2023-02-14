@@ -1,33 +1,30 @@
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-let fs = require('fs');
- 
-class FillerDB {
+import { join, basename, extname } from "path";
+import { v4 as uuidv4 } from "uuid";
+import { readFile, writeFile, unlink, readdir } from "fs";
 
-    constructor(folder,  channelService) {
+class FillerDB {
+    constructor(folder, channelService) {
         this.folder = folder;
         this.cache = {};
         this.channelService = channelService;
-
-
     }
 
     async $loadFiller(id) {
-        let f = path.join(this.folder, `${id}.json` );
+        const f = join(this.folder, `${id}.json`);
         try {
-            return await new Promise( (resolve, reject) => {
-                fs.readFile(f, (err, data) => {
+            return await new Promise((resolve, reject) => {
+                readFile(f, (err, data) => {
                     if (err) {
                         return reject(err);
                     }
                     try {
-                        let j = JSON.parse(data);
+                        const j = JSON.parse(data);
                         j.id = id;
                         resolve(j);
                     } catch (err) {
                         reject(err);
                     }
-                })
+                });
             });
         } catch (err) {
             console.error(err);
@@ -36,29 +33,29 @@ class FillerDB {
     }
 
     async getFiller(id) {
-        if (typeof(this.cache[id]) === 'undefined') {
+        if (typeof this.cache[id] === "undefined") {
             this.cache[id] = await this.$loadFiller(id);
         }
         return this.cache[id];
     }
 
     async saveFiller(id, json) {
-        if (typeof(id) === 'undefined') {
+        if (typeof id === "undefined") {
             throw Error("Mising filler id");
         }
-        let f = path.join(this.folder, `${id}.json` );
+        const f = join(this.folder, `${id}.json`);
         try {
-            await new Promise( (resolve, reject) => {
+            await new Promise((resolve, reject) => {
                 let data = undefined;
                 try {
-                    //id is determined by the file name, not the contents
+                    // id is determined by the file name, not the contents
                     fixup(json);
                     delete json.id;
                     data = JSON.stringify(json);
                 } catch (err) {
                     return reject(err);
                 }
-                fs.writeFile(f, data, (err) => {
+                writeFile(f, data, (err) => {
                     if (err) {
                         return reject(err);
                     }
@@ -71,49 +68,52 @@ class FillerDB {
     }
 
     async createFiller(json) {
-        let id = uuidv4();
+        const id = uuidv4();
         fixup(json);
         await this.saveFiller(id, json);
         return id;
     }
 
     async getFillerChannels(id) {
-        let numbers = await this.channelService.getAllChannelNumbers();
-        let channels = [];
-        await Promise.all( numbers.map( async(number) => {
-            let ch = await this.channelService.getChannel(number);
-            let name = ch.name;
-            let fillerCollections = ch.fillerCollections;
-            for (let i = 0 ; i < fillerCollections.length; i++) {
-                if (fillerCollections[i].id === id) {
-                    channels.push( {
-                        number: number,
-                        name : name,
-                    } );
-                    break;
+        const numbers = await this.channelService.getAllChannelNumbers();
+        const channels = [];
+        await Promise.all(
+            numbers.map(async (number) => {
+                let ch = await this.channelService.getChannel(number);
+                const name = ch.name;
+                const fillerCollections = ch.fillerCollections;
+                for (let i = 0; i < fillerCollections.length; i++) {
+                    if (fillerCollections[i].id === id) {
+                        channels.push({
+                            number: number,
+                            name: name,
+                        });
+                        break;
+                    }
                 }
-            }
-            ch = null;
-
-        } ) );
+                ch = null;
+            }),
+        );
         return channels;
     }
 
     async deleteFiller(id) {
         try {
-            let channels = await this.getFillerChannels(id);
-            await Promise.all( channels.map( async(channel) => {
-                console.log(`Updating channel ${channel.number} , remove filler: ${id}`);
-                let json = await channelService.getChannel(channel.number);
-                json.fillerCollections = json.fillerCollections.filter( (col) => {
-                    return col.id != id;
-                } );
-                await this.channelService.saveChannel( channel.number, json );
-            } ) );
+            const channels = await this.getFillerChannels(id);
+            await Promise.all(
+                channels.map(async (channel) => {
+                    console.log(`Updating channel ${channel.number} , remove filler: ${id}`);
+                    const json = await channelService.getChannel(channel.number);
+                    json.fillerCollections = json.fillerCollections.filter((col) => {
+                        return col.id != id;
+                    });
+                    await this.channelService.saveChannel(channel.number, json);
+                }),
+            );
 
-            let f = path.join(this.folder, `${id}.json` );
-            await new Promise( (resolve, reject) => {
-                fs.unlink(f, function (err) {
+            const f = join(this.folder, `${id}.json`);
+            await new Promise((resolve, reject) => {
+                unlink(f, function (err) {
                     if (err) {
                         return reject(err);
                     }
@@ -125,78 +125,75 @@ class FillerDB {
         }
     }
 
-    
     async getAllFillerIds() {
-        return await new Promise( (resolve, reject) => {
-            fs.readdir(this.folder, function(err, items) {
+        return await new Promise((resolve, reject) => {
+            readdir(this.folder, function (err, items) {
                 if (err) {
                     return reject(err);
                 }
-                let fillerIds = [];
+                const fillerIds = [];
                 for (let i = 0; i < items.length; i++) {
-                    let name = path.basename( items[i] );
-                    if (path.extname(name) === '.json') {
-                        let id = name.slice(0, -5);
+                    const name = basename(items[i]);
+                    if (extname(name) === ".json") {
+                        const id = name.slice(0, -5);
                         fillerIds.push(id);
                     }
                 }
-                resolve (fillerIds);
+                resolve(fillerIds);
             });
         });
     }
-    
+
     async getAllFillers() {
-        let ids = await this.getAllFillerIds();
-        return await Promise.all( ids.map( async (c) => this.getFiller(c) ) );
+        const ids = await this.getAllFillerIds();
+        return await Promise.all(ids.map(async (c) => this.getFiller(c)));
     }
 
     async getAllFillersInfo() {
-        //returns just name and id
-        let fillers = await this.getAllFillers();
-        return fillers.map( (f) =>  {
+        // returns just name and id
+        const fillers = await this.getAllFillers();
+        return fillers.map((f) => {
             return {
-                'id'  : f.id,
-                'name': f.name,
-                'count': f.content.length,
-            }
-        } );
+                id: f.id,
+                name: f.name,
+                count: f.content.length,
+            };
+        });
     }
 
     async getFillersFromChannel(channel) {
         let f = [];
-        if (typeof(channel.fillerCollections) !== 'undefined') {
+        if (typeof channel.fillerCollections !== "undefined") {
             f = channel.fillerContent;
         }
-        let loadChannelFiller = async(fillerEntry) => {
+        const loadChannelFiller = async (fillerEntry) => {
             let content = [];
             try {
-                let filler = await this.getFiller(fillerEntry.id);
+                const filler = await this.getFiller(fillerEntry.id);
                 content = filler.content;
-            } catch(e) {
-                console.error(`Channel #${channel.number} - ${channel.name} references an unattainable filler id: ${fillerEntry.id}`);
+            } catch (e) {
+                console.error(
+                    `Channel #${channel.number} - ${channel.name} references an unattainable filler id: ${fillerEntry.id}`,
+                );
             }
             return {
                 id: fillerEntry.id,
                 content: content,
                 weight: fillerEntry.weight,
                 cooldown: fillerEntry.cooldown,
-            }
+            };
         };
-        return await Promise.all(
-            channel.fillerCollections.map(loadChannelFiller)
-        );
+        return await Promise.all(channel.fillerCollections.map(loadChannelFiller));
     }
-
-
 }
 
 function fixup(json) {
-    if (typeof(json.content) === 'undefined') {
+    if (typeof json.content === "undefined") {
         json.content = [];
     }
-    if (typeof(json.name) === 'undefined') {
+    if (typeof json.name === "undefined") {
         json.name = "Unnamed Filler";
     }
 }
 
-module.exports = FillerDB;
+export default FillerDB;

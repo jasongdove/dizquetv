@@ -1,7 +1,7 @@
-module.exports = function ($timeout) {
+export default function ($timeout) {
     return {
-        restrict: 'E',
-        templateUrl: 'templates/frequency-tweak.html',
+        restrict: "E",
+        templateUrl: "templates/frequency-tweak.html",
         replace: true,
         scope: {
             programs: "=programs",
@@ -13,12 +13,12 @@ module.exports = function ($timeout) {
         link: function (scope, element, attrs) {
             scope.setModified = () => {
                 scope.modified = true;
-            }
+            };
             scope.finished = (programs) => {
-                let p = programs;
+                const p = programs;
                 scope.programs = null;
                 scope.onDone(p);
-            }
-        }
+            };
+        },
     };
 }
