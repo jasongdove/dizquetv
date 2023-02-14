@@ -2,11 +2,8 @@ import db from "diskdb";
 
 import bodyParser from "body-parser";
 
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import dirname from "es-dirname";
+const __dirname = dirname();
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join, resolve as _resolve } from "path";
