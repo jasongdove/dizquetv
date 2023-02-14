@@ -1,6 +1,6 @@
-import { createWriteStream, rmdir, mkdirSync } from "fs";
-import { Router } from "express";
-import request from "request";
+const fs = require('fs');
+const express = require('express');
+const request = require('request');
 
 /**
  * Manager a cache in disk for external images.
@@ -8,43 +8,40 @@ import request from "request";
  * @class CacheImageService
  */
 class CacheImageService {
-    constructor(db, fileCacheService) {
+    constructor( db, fileCacheService ) {
         this.cacheService = fileCacheService;
-        this.imageCacheFolder = "images";
-        this.db = db["cache-images"];
+        this.imageCacheFolder = 'images';
+        this.db = db['cache-images'];
     }
 
     /**
      * Router interceptor to download image and update cache before pass to express.static return this cached image.
-     *
+     * 
      * GET /:hash - Hash is a full external URL encoded in base64.
      * eg.: http://{host}/cache/images/aHR0cHM6Ly8xO...cXVUbmFVNDZQWS1LWQ==
      *
-     * @return
+     * @returns
      * @memberof CacheImageService
      */
     routerInterceptor() {
-        const router = Router();
-
-        router.get("/:hash", async (req, res, next) => {
+        const router = express.Router();
+        
+        router.get('/:hash', async (req, res, next) => {
             try {
                 const hash = req.params.hash;
-                const imgItem = this.db.find({ url: hash })[0];
-                if (imgItem) {
+                const imgItem = this.db.find({url: hash})[0];
+                if(imgItem) {
                     const file = await this.getImageFromCache(imgItem.url);
-                    if (!file.length) {
-                        const fileMimeType = await this.requestImageAndStore(
-                            Buffer.from(imgItem.url, "base64").toString("ascii"),
-                            imgItem,
-                        );
-                        res.set("content-type", fileMimeType);
+                    if(!file.length) {
+                        const fileMimeType = await this.requestImageAndStore(Buffer.from(imgItem.url, 'base64').toString('ascii'), imgItem);
+                        res.set('content-type', fileMimeType);
                         next();
                     } else {
-                        res.set("content-type", imgItem.mimeType);
+                        res.set('content-type', imgItem.mimeType);
                         next();
                     }
                 }
-            } catch (err) {
+            } catch(err) {
                 console.error(err);
                 res.status(500).send("error");
             }
@@ -55,19 +52,19 @@ class CacheImageService {
     /**
      * Routers exported to use on express.use() function.
      * Use on api routers, like `{host}/api/cache/images`
-     *
+     * 
      * `DELETE /` - Clear all files on .dizquetv/cache/images
      *
-     * @return {Router}
+     * @returns {Router}
      * @memberof CacheImageService
      */
     apiRouters() {
-        const router = Router();
+        const router = express.Router();
 
-        router.delete("/", async (req, res, next) => {
+        router.delete('/', async (req, res, next) => {
             try {
                 await this.clearCache();
-                res.status(200).send({ msg: "Cache Image are Cleared" });
+                res.status(200).send({msg: 'Cache Image are Cleared'});
             } catch (error) {
                 console.error(error);
                 res.status(500).send("error");
@@ -82,31 +79,30 @@ class CacheImageService {
      *
      * @param {*} url External URL to get file/image
      * @param {*} dbFile register of file from db
-     * @return {promise} `Resolve` when can download imagem and store on cache folder, `Reject` when file are inaccessible over network or can't write on directory
+     * @returns {promise} `Resolve` when can download imagem and store on cache folder, `Reject` when file are inaccessible over network or can't write on directory
      * @memberof CacheImageService
      */
     async requestImageAndStore(url, dbFile) {
-        return new Promise(async (resolve, reject) => {
+        return new Promise( async(resolve, reject) => {
             const requestConfiguration = {
-                method: "get",
-                url,
+                method: 'get',
+                url
             };
 
             request(requestConfiguration, (err, res) => {
                 if (err) {
                     reject(err);
                 } else {
-                    const mimeType = res.headers["content-type"];
-                    this.db.update({ _id: dbFile._id }, { url: dbFile.url, mimeType });
+                    const mimeType = res.headers['content-type'];
+                    this.db.update({_id: dbFile._id}, {url: dbFile.url, mimeType});
                     request(requestConfiguration)
-                        .pipe(
-                            createWriteStream(`${this.cacheService.cachePath}/${this.imageCacheFolder}/${dbFile.url}`),
-                        )
-                        .on("close", () => {
-                            resolve(mimeType);
-                        });
+                    .pipe(fs.createWriteStream(`${this.cacheService.cachePath}/${this.imageCacheFolder}/${dbFile.url}`))
+                    .on('close', () =>{
+                        resolve(mimeType);
+                    });
                 }
             });
+
         });
     }
 
@@ -114,11 +110,11 @@ class CacheImageService {
      * Get image from cache using an filename
      *
      * @param {*} fileName
-     * @return {promise} `Resolve` with file content
+     * @returns {promise} `Resolve` with file content
      * @memberof CacheImageService
      */
     getImageFromCache(fileName) {
-        return new Promise(async (resolve, reject) => {
+        return new Promise(async(resolve, reject) => {
             try {
                 const file = await this.cacheService.getCache(`${this.imageCacheFolder}/${fileName}`);
                 resolve(file);
@@ -131,30 +127,30 @@ class CacheImageService {
     /**
      * Clear all files on .dizquetv/cache/images
      *
-     * @return {promise}
+     * @returns {promise}
      * @memberof CacheImageService
      */
     async clearCache() {
-        return new Promise(async (resolve, reject) => {
+        return new Promise( async(resolve, reject) => {
             const cachePath = `${this.cacheService.cachePath}/${this.imageCacheFolder}`;
-            rmdir(cachePath, { recursive: true }, (err) => {
-                if (err) {
+            fs.rmdir(cachePath, { recursive: true }, (err) => {
+                if(err) {
                     reject();
                 }
-                mkdirSync(cachePath);
+                fs.mkdirSync(cachePath);
                 resolve();
             });
         });
     }
 
     registerImageOnDatabase(imageUrl) {
-        const url = Buffer.from(imageUrl).toString("base64");
-        const dbQuery = { url };
-        if (!this.db.find(dbQuery)[0]) {
+        const url = Buffer.from(imageUrl).toString('base64');
+        const dbQuery = {url};
+        if(!this.db.find(dbQuery)[0]) {
             this.db.save(dbQuery);
         }
         return url;
     }
 }
 
-export default CacheImageService;
+module.exports = CacheImageService;

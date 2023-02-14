@@ -1,1 +1,2 @@
-export default function () {}
+module.exports = function () {
+}

@@ -1,18 +1,19 @@
-export default function ($timeout, dizquetv, getShowData) {
-    const MINUTE = 60 * 1000;
-    const HOUR = 60 * MINUTE;
-    const DAY = 24 * HOUR;
-    const WEEK = 7 * DAY;
 
+module.exports = function ($timeout, dizquetv, getShowData) {
+    const MINUTE = 60*1000;
+    const HOUR = 60*MINUTE;
+    const DAY = 24*HOUR;
+    const WEEK = 7 * DAY;
+    
     return {
-        restrict: "E",
-        templateUrl: "templates/random-slots-schedule-editor.html",
+        restrict: 'E',
+        templateUrl: 'templates/random-slots-schedule-editor.html',
         replace: true,
         scope: {
             linker: "=linker",
-            onDone: "=onDone",
+            onDone: "=onDone"
         },
-
+        
         link: function (scope, element, attrs) {
             scope.limit = 50000;
             scope.visible = false;
@@ -22,26 +23,27 @@ export default function ($timeout, dizquetv, getShowData) {
             let showsById;
             let shows;
 
+
             function reset() {
                 showsById = {};
                 shows = [];
                 scope.schedule = {
                     maxDays: 365,
-                    flexPreference: "distribute",
+                    flexPreference : "distribute",
                     padStyle: "slot",
                     randomDistribution: "uniform",
-                    slots: [],
+                    slots : [],
                     pad: 1,
-                };
+                }
             }
             reset();
 
             function loadBackup(backup) {
-                scope.schedule = JSON.parse(JSON.stringify(backup));
-                if (typeof scope.schedule.pad == "undefined") {
+                scope.schedule = JSON.parse( JSON.stringify(backup) );
+                if (typeof(scope.schedule.pad) == 'undefined') {
                     scope.schedule.pad = 1;
                 }
-                const slots = scope.schedule.slots;
+                let slots = scope.schedule.slots;
                 for (let i = 0; i < slots.length; i++) {
                     let found = false;
                     for (let j = 0; j < scope.showOptions.length; j++) {
@@ -49,120 +51,124 @@ export default function ($timeout, dizquetv, getShowData) {
                             found = true;
                         }
                     }
-                    if (!found) {
-                        slots[i].showId = "flex.";
+                    if (! found) {
+                        slots[i].showId  = "flex.";
                         slots[i].order = "shuffle";
                     }
                 }
-                if (typeof scope.schedule.flexPreference === "undefined") {
+                if (typeof(scope.schedule.flexPreference) === 'undefined') {
                     scope.schedule.flexPreference = "distribute";
                 }
-                if (typeof scope.schedule.padStyle === "undefined") {
+                if (typeof(scope.schedule.padStyle) === 'undefined') {
                     scope.schedule.padStyle = "slot";
                 }
-                if (typeof scope.schedule.randomDistribution === "undefined") {
+                if (typeof(scope.schedule.randomDistribution) === 'undefined') {
                     scope.schedule.randomDistribution = "uniform";
                 }
 
                 scope.refreshSlots();
+
             }
 
             getTitle = (index) => {
-                const showId = scope.schedule.slots[index].showId;
+                let showId = scope.schedule.slots[index].showId;
                 for (let i = 0; i < scope.showOptions.length; i++) {
                     if (scope.showOptions[i].id == showId) {
                         return scope.showOptions[i].description;
                     }
                 }
                 return "Unknown";
-            };
+            }
             scope.isWeekly = () => {
-                return scope.schedule.period === WEEK;
+                return (scope.schedule.period === WEEK);
             };
             scope.addSlot = () => {
-                scope.schedule.slots.push({
-                    duration: 30 * MINUTE,
-                    showId: "flex.",
-                    order: "next",
-                    cooldown: 0,
-                });
-            };
+                scope.schedule.slots.push(
+                    {
+                        duration: 30 * MINUTE,
+                        showId: "flex.",
+                        order: "next",
+                        cooldown : 0,
+                    }
+                );
+            }
             scope.timeColumnClass = () => {
-                return { "col-md-1": true };
-            };
+                return { "col-md-1": true};
+            }
             scope.programColumnClass = () => {
-                return { "col-md-6": true };
+                return { "col-md-6": true};
             };
             scope.durationOptions = [
-                { id: 5 * MINUTE, description: "5 Minutes" },
-                { id: 10 * MINUTE, description: "10 Minutes" },
-                { id: 15 * MINUTE, description: "15 Minutes" },
-                { id: 20 * MINUTE, description: "20 Minutes" },
-                { id: 25 * MINUTE, description: "25 Minutes" },
-                { id: 30 * MINUTE, description: "30 Minutes" },
-                { id: 45 * MINUTE, description: "45 Minutes" },
-                { id: 1 * HOUR, description: "1 Hour" },
-                { id: 90 * MINUTE, description: "90 Minutes" },
-                { id: 100 * MINUTE, description: "100 Minutes" },
-                { id: 2 * HOUR, description: "2 Hours" },
-                { id: 3 * HOUR, description: "3 Hours" },
-                { id: 4 * HOUR, description: "4 Hours" },
-                { id: 5 * HOUR, description: "5 Hours" },
-                { id: 6 * HOUR, description: "6 Hours" },
-                { id: 8 * HOUR, description: "8 Hours" },
-                { id: 10 * HOUR, description: "10 Hours" },
-                { id: 12 * HOUR, description: "12 Hours" },
-                { id: 1 * DAY, description: "1 Day" },
+                { id: 5 * MINUTE , description: "5 Minutes" },
+                { id: 10 * MINUTE , description: "10 Minutes" },
+                { id: 15 * MINUTE , description: "15 Minutes" },
+                { id: 20 * MINUTE , description: "20 Minutes" },
+                { id: 25 * MINUTE , description: "25 Minutes" },
+                { id: 30 * MINUTE , description: "30 Minutes" },
+                { id: 45 * MINUTE , description: "45 Minutes" },
+                { id: 1 * HOUR , description: "1 Hour" },
+                { id: 90 * MINUTE , description: "90 Minutes" },
+                { id: 100 * MINUTE , description: "100 Minutes" },
+                { id: 2 * HOUR , description: "2 Hours" },
+                { id: 3 * HOUR , description: "3 Hours" },
+                { id: 4 * HOUR , description: "4 Hours" },
+                { id: 5 * HOUR , description: "5 Hours" },
+                { id: 6 * HOUR , description: "6 Hours" },
+                { id: 8 * HOUR , description: "8 Hours" },
+                { id: 10* HOUR , description: "10 Hours" },
+                { id: 12* HOUR , description: "12 Hours" },
+                { id: 1 * DAY , description: "1 Day" },
             ];
             scope.cooldownOptions = [
-                { id: 0, description: "No cooldown" },
-                { id: 1 * MINUTE, description: "1 Minute" },
-                { id: 5 * MINUTE, description: "5 Minutes" },
-                { id: 10 * MINUTE, description: "10 Minutes" },
-                { id: 15 * MINUTE, description: "15 Minutes" },
-                { id: 20 * MINUTE, description: "20 Minutes" },
-                { id: 25 * MINUTE, description: "25 Minutes" },
-                { id: 30 * MINUTE, description: "30 Minutes" },
-                { id: 45 * MINUTE, description: "45 Minutes" },
-                { id: 1 * HOUR, description: "1 Hour" },
-                { id: 90 * MINUTE, description: "90 Minutes" },
-                { id: 100 * MINUTE, description: "100 Minutes" },
-                { id: 2 * HOUR, description: "2 Hours" },
-                { id: 3 * HOUR, description: "3 Hours" },
-                { id: 4 * HOUR, description: "4 Hours" },
-                { id: 5 * HOUR, description: "5 Hours" },
-                { id: 6 * HOUR, description: "6 Hours" },
-                { id: 8 * HOUR, description: "8 Hours" },
-                { id: 10 * HOUR, description: "10 Hours" },
-                { id: 12 * HOUR, description: "12 Hours" },
-                { id: 1 * DAY, description: "1 Day" },
-                { id: 1 * DAY, description: "2 Days" },
-                { id: 3 * DAY + 12 * HOUR, description: "3.5 Days" },
-                { id: 7 * DAY, description: "1 Week" },
+                { id: 0 , description: "No cooldown" },
+                { id: 1 * MINUTE , description: "1 Minute" },
+                { id: 5 * MINUTE , description: "5 Minutes" },
+                { id: 10 * MINUTE , description: "10 Minutes" },
+                { id: 15 * MINUTE , description: "15 Minutes" },
+                { id: 20 * MINUTE , description: "20 Minutes" },
+                { id: 25 * MINUTE , description: "25 Minutes" },
+                { id: 30 * MINUTE , description: "30 Minutes" },
+                { id: 45 * MINUTE , description: "45 Minutes" },
+                { id: 1 * HOUR , description: "1 Hour" },
+                { id: 90 * MINUTE , description: "90 Minutes" },
+                { id: 100 * MINUTE , description: "100 Minutes" },
+                { id: 2 * HOUR , description: "2 Hours" },
+                { id: 3 * HOUR , description: "3 Hours" },
+                { id: 4 * HOUR , description: "4 Hours" },
+                { id: 5 * HOUR , description: "5 Hours" },
+                { id: 6 * HOUR , description: "6 Hours" },
+                { id: 8 * HOUR , description: "8 Hours" },
+                { id: 10* HOUR , description: "10 Hours" },
+                { id: 12* HOUR , description: "12 Hours" },
+                { id: 1 * DAY , description: "1 Day" },
+                { id: 1 * DAY , description: "2 Days" },
+                { id: 3 * DAY + 12 * HOUR , description: "3.5 Days" },
+                { id: 7 * DAY , description: "1 Week" },
             ];
 
             scope.flexOptions = [
                 { id: "distribute", description: "Between videos" },
                 { id: "end", description: "End of the slot" },
-            ];
+            ]
 
             scope.distributionOptions = [
                 { id: "uniform", description: "Uniform" },
                 { id: "weighted", description: "Weighted" },
-            ];
+            ]
+
 
             scope.padOptions = [
-                { id: 1, description: "Do not pad" },
-                { id: 1 * MINUTE, description: "0:00, 0:01, 0:02, ..., 0:59" },
-                { id: 5 * MINUTE, description: "0:00, 0:05, 0:10, ..., 0:55" },
-                { id: 10 * 60 * 1000, description: "0:00, 0:10, 0:20, ..., 0:50" },
-                { id: 15 * 60 * 1000, description: "0:00, 0:15, 0:30, ..., 0:45" },
-                { id: 30 * 60 * 1000, description: "0:00, 0:30" },
-                { id: 1 * 60 * 60 * 1000, description: "0:00" },
+                {id: 1, description: "Do not pad" },
+                {id: 1*MINUTE, description: "0:00, 0:01, 0:02, ..., 0:59" },
+                {id: 5*MINUTE, description: "0:00, 0:05, 0:10, ..., 0:55" },
+                {id: 10*60*1000, description: "0:00, 0:10, 0:20, ..., 0:50" },
+                {id: 15*60*1000, description: "0:00, 0:15, 0:30, ..., 0:45" },
+                {id: 30*60*1000, description: "0:00, 0:30" },
+                {id: 1*60*60*1000, description: "0:00" },
             ];
             scope.padStyleOptions = [
-                { id: "episode", description: "Pad Episodes" },
-                { id: "slot", description: "Pad Slots" },
+                {id: "episode" , description: "Pad Episodes" },
+                {id: "slot" , description: "Pad Slots" },
             ];
 
             scope.showOptions = [];
@@ -171,19 +177,19 @@ export default function ($timeout, dizquetv, getShowData) {
                 { id: "shuffle", description: "Shuffle" },
             ];
 
-            const doWait = (millis) => {
-                return new Promise((resolve) => {
-                    $timeout(resolve, millis);
-                });
-            };
+            let doWait = (millis) => {
+                return new Promise( (resolve) => {
+                    $timeout( resolve, millis );
+                } );
+            }
 
-            const doIt = async (fromInstant) => {
-                const t0 = new Date().getTime();
-                const res = await dizquetv.calculateRandomSlots(scope.programs, scope.schedule);
-                const t1 = new Date().getTime();
+            let doIt = async(fromInstant) => {
+                let t0 = new Date().getTime();
+                let res = await dizquetv.calculateRandomSlots(scope.programs, scope.schedule  );
+                let t1 = new Date().getTime();
 
-                const w = Math.max(0, 250 - (t1 - t0));
-                if (fromInstant && w > 0) {
+                let w = Math.max(0, 250 - (t1 - t0) );
+                if (fromInstant && (w > 0) ) {
                     await doWait(w);
                 }
 
@@ -192,33 +198,36 @@ export default function ($timeout, dizquetv, getShowData) {
                 }
                 res.schedule = scope.schedule;
                 return res;
-            };
+            }
 
-            const startDialog = (programs, limit, backup, instant) => {
+
+
+            
+            let startDialog = (programs, limit, backup, instant) => {
                 scope.limit = limit;
                 scope.programs = programs;
 
                 reset();
+                
 
-                programs.forEach((p) => {
+
+                programs.forEach( (p) => {
                     let show = getShow(p);
                     if (show != null) {
-                        if (typeof showsById[show.id] === "undefined") {
+                        if (typeof(showsById[show.id]) === 'undefined') {
                             showsById[show.id] = shows.length;
-                            shows.push(show);
+                            shows.push( show );
                         } else {
-                            show = shows[showsById[show.id]];
+                            show = shows[ showsById[show.id] ];
                         }
                     }
-                });
-                scope.showOptions = shows.map((show) => {
-                    return show;
-                });
-                scope.showOptions.push({
+                } );
+                scope.showOptions = shows.map( (show) => { return show } );
+                scope.showOptions.push( {
                     id: "flex.",
                     description: "Flex",
-                });
-                scope.hadBackup = typeof backup !== "undefined";
+                } );
+                scope.hadBackup = (typeof(backup) !== 'undefined');
                 if (scope.hadBackup) {
                     loadBackup(backup);
                 }
@@ -227,16 +236,17 @@ export default function ($timeout, dizquetv, getShowData) {
                 if (instant) {
                     scope.finished(false, true);
                 }
-            };
+            }
 
-            scope.linker({
+
+            scope.linker( {
                 startDialog: startDialog,
-            });
+            } );
 
             scope.finished = async (cancel, fromInstant) => {
                 scope.error = null;
                 if (!cancel) {
-                    if (scope.schedule.slots.length === 0) {
+                    if ( scope.schedule.slots.length === 0) {
                         scope.onDone(null);
                         scope.visible = false;
                         return;
@@ -244,11 +254,11 @@ export default function ($timeout, dizquetv, getShowData) {
                     try {
                         scope.loading = true;
                         $timeout();
-                        scope.onDone(await doIt(fromInstant));
+                        scope.onDone( await doIt(fromInstant) );
                         scope.visible = false;
-                    } catch (err) {
+                    } catch(err) {
                         console.error("Unable to generate channel lineup", err);
-                        scope.error = "There was an error processing the schedule";
+                        scope.error  = "There was an error processing the schedule";
                         return;
                     } finally {
                         scope.loading = false;
@@ -257,40 +267,46 @@ export default function ($timeout, dizquetv, getShowData) {
                 } else {
                     scope.visible = false;
                 }
-            };
+            }
 
             scope.deleteSlot = (index) => {
                 scope.schedule.slots.splice(index, 1);
-            };
+            }
 
             scope.hasTimeError = (slot) => {
-                return typeof slot.timeError !== "undefined";
-            };
+                return typeof(slot.timeError) !== 'undefined';
+            }
 
             scope.disableCreateLineup = () => {
                 if (scope.badTimes) {
                     return true;
                 }
-                if (typeof scope.schedule.maxDays === "undefined") {
+                if (typeof(scope.schedule.maxDays) === 'undefined') {
                     return true;
                 }
                 if (scope.schedule.slots.length == 0) {
                     return true;
                 }
                 return false;
-            };
+            }
 
             scope.hideCreateLineup = () => {
-                return scope.disableCreateLineup() && scope.schedule.slots.length == 0 && scope.hadBackup;
-            };
-
+                return (
+                    scope.disableCreateLineup()
+                    && (scope.schedule.slots.length == 0)
+                    && scope.hadBackup
+                );
+            }
+                       
             scope.showResetSlots = () => {
                 return scope.hideCreateLineup();
-            };
+            }
+            
+
 
             scope.canShowSlot = (slot) => {
-                return slot.showId != "flex." && !slot.showId.startsWith("redirect.");
-            };
+                return (slot.showId != 'flex.') && !(slot.showId.startsWith('redirect.'));
+            }
 
             scope.refreshSlots = () => {
                 let sum = 0;
@@ -298,20 +314,20 @@ export default function ($timeout, dizquetv, getShowData) {
                     sum += scope.schedule.slots[i].weight;
                 }
                 for (let i = 0; i < scope.schedule.slots.length; i++) {
-                    if (scope.schedule.slots[i].showId == "movie.") {
+                    if (scope.schedule.slots[i].showId == 'movie.') {
                         scope.schedule.slots[i].order = "shuffle";
                     }
-                    if (isNaN(scope.schedule.slots[i].cooldown)) {
+                    if ( isNaN(scope.schedule.slots[i].cooldown) ) {
                         scope.schedule.slots[i].cooldown = 0;
                     }
-                    scope.schedule.slots[i].weightPercentage =
-                        ((100 * scope.schedule.slots[i].weight) / sum).toFixed(2) + "%";
+                    scope.schedule.slots[i].weightPercentage
+                        = (100 * scope.schedule.slots[i].weight / sum).toFixed(2) + "%";
                 }
                 $timeout();
-            };
+            }
 
             scope.randomDistributionChanged = () => {
-                if (scope.schedule.randomDistribution === "uniform") {
+                if (scope.schedule.randomDistribution === 'uniform') {
                     for (let i = 0; i < scope.schedule.slots.length; i++) {
                         scope.schedule.slots[i].weight = 1;
                     }
@@ -321,13 +337,17 @@ export default function ($timeout, dizquetv, getShowData) {
                     }
                 }
                 scope.refreshSlots();
-            };
-        },
+            }
+
+
+
+        }
     };
 
     function getShow(program) {
-        const d = getShowData(program);
-        if (!d.hasShow) {
+
+        let d = getShowData(program);
+        if (! d.hasShow) {
             return null;
         } else {
             d.description = d.showDisplayName;
@@ -335,4 +355,5 @@ export default function ($timeout, dizquetv, getShowData) {
             return d;
         }
     }
+
 }

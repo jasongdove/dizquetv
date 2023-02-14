@@ -1,13 +1,13 @@
-export default function ($timeout) {
+module.exports = function ($timeout) {
     return {
-        restrict: "E",
-        templateUrl: "templates/remove-shows.html",
+        restrict: 'E',
+        templateUrl: 'templates/remove-shows.html',
         replace: true,
         scope: {
             programInfos: "=programInfos",
             visible: "=visible",
             onDone: "=onDone",
-            deleted: "=deleted",
+            deleted: "=deleted"
         },
         link: function (scope, element, attrs) {
             scope.toggleShowDeletion = (programId) => {
@@ -17,13 +17,13 @@ export default function ($timeout) {
                 } else {
                     scope.deleted.splice(deletedIdx, 1);
                 }
-            };
+            }
             scope.finished = () => {
                 const d = scope.deleted;
                 scope.programInfos = null;
                 scope.deleted = null;
                 scope.onDone(d);
-            };
-        },
+            }
+        }
     };
 }

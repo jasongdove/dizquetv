@@ -7,8 +7,7 @@
     "extends": ["google", "prettier"],
     "overrides": [],
     "parserOptions": {
-        "ecmaVersion": "latest",
-        "sourceType": "module"
+        "ecmaVersion": "latest"
     },
     "plugins": ["prettier"],
     "rules": {

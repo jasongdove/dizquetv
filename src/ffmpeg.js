@@ -1,10 +1,10 @@
-import { spawn } from "child_process";
-import { EventEmitter } from "events";
+const spawn = require("child_process").spawn;
+const events = require("events");
 
 const MAXIMUM_ERROR_DURATION_MS = 60000;
 const REALLY_RIDICULOUSLY_HIGH_FPS_FOR_DIZQUETVS_USECASE = 120;
 
-class FFMPEG extends EventEmitter {
+class FFMPEG extends events.EventEmitter {
     constructor(opts, channel) {
         super();
         this.opts = opts;
@@ -643,4 +643,4 @@ function gcd(a, b) {
     return a;
 }
 
-export default FFMPEG;
+module.exports = FFMPEG;
