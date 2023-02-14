@@ -1,4 +1,6 @@
-export default function ($timeout, commonProgramTools, getShowData) {
+"use strict";
+
+module.exports = function ($timeout, commonProgramTools, getShowData) {
     return {
         restrict: "E",
         templateUrl: "templates/filler-config.html",
@@ -7,7 +9,7 @@ export default function ($timeout, commonProgramTools, getShowData) {
             linker: "=linker",
             onDone: "=onDone",
         },
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             scope.showTools = false;
             scope.showPlexLibrary = false;
             scope.content = [];
@@ -38,7 +40,7 @@ export default function ($timeout, commonProgramTools, getShowData) {
                 return false;
             };
             scope.setUpWatcher = function setupWatchers() {
-                this.$watch("vsRepeat.startIndex", function (val) {
+                this.$watch("vsRepeat.startIndex", (val) => {
                     scope.currentStartIndex = val;
                 });
             };
@@ -94,17 +96,12 @@ export default function ($timeout, commonProgramTools, getShowData) {
                 const show = getShowData(clip);
                 if (show.hasShow && show.showId !== "movie.") {
                     return show.showDisplayName + " - " + clip.title;
-                } else {
-                    return clip.title;
                 }
+                return clip.title;
             };
-            scope.showList = () => {
-                return !scope.showPlexLibrary;
-            };
+            scope.showList = () => !scope.showPlexLibrary;
             scope.sortFillersByLength = () => {
-                scope.content.sort((a, b) => {
-                    return a.duration - b.duration;
-                });
+                scope.content.sort((a, b) => a.duration - b.duration);
                 refreshContentIndexes();
             };
             scope.sortFillersCorrectly = () => {
@@ -120,6 +117,7 @@ export default function ($timeout, commonProgramTools, getShowData) {
                 function getKey(p) {
                     return p.serverKey + "|" + p.plexFile;
                 }
+
                 const seen = {};
                 const newFiller = [];
                 for (let i = 0; i < scope.content.length; i++) {
@@ -150,7 +148,7 @@ export default function ($timeout, commonProgramTools, getShowData) {
 
             const interpolate = (() => {
                 const h = (60 * 60 * 1000) / 6;
-                const ix = [0, 1 * h, 2 * h, 4 * h, 8 * h, 24 * h];
+                const ix = [0, Number(h), 2 * h, 4 * h, 8 * h, 24 * h];
                 const iy = [0, 1.0, 1.25, 1.5, 1.75, 2.0];
                 const n = ix.length;
 
@@ -165,8 +163,8 @@ export default function ($timeout, commonProgramTools, getShowData) {
 
             scope.programSquareStyle = (program, dash) => {
                 const background = "rgb(255, 255, 255)";
-                let ems = Math.pow(Math.min(60 * 60 * 1000, program.duration), 0.7);
-                ems = ems / Math.pow(1 * 60 * 1000, 0.7);
+                let ems = Math.min(60 * 60 * 1000, program.duration) ** 0.7;
+                ems /= (1 * 60 * 1000) ** 0.7;
                 ems = Math.max(0.25, ems);
                 let top = Math.max(0.0, (1.75 - ems) / 2.0);
                 if (top == 0.0) {
@@ -178,13 +176,13 @@ export default function ($timeout, commonProgramTools, getShowData) {
                 const t = 4 * 60 * 60 * 1000;
                 let a = (f(program.duration) * w) / f(t);
                 a = Math.min(w, Math.max(0.3, a));
-                b = w - a + 0.01;
+                const b = w - a + 0.01;
 
                 return {
                     "width": `${a}%`,
                     "height": "1.3em",
                     "margin-right": `${b}%`,
-                    "background": background,
+                    background,
                     "border": `1px ${solidOrDash} black`,
                     "margin-top": top,
                     "margin-bottom": "1px",
@@ -192,4 +190,4 @@ export default function ($timeout, commonProgramTools, getShowData) {
             };
         },
     };
-}
+};

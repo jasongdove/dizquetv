@@ -1,6 +1,8 @@
-import Plex from "../../src/plex.js";
+"use strict";
 
-export default function ($http, $window, $interval) {
+const Plex = require("../../src/plex");
+
+module.exports = function ($http, $window, $interval) {
     const exported = {
         login: async () => {
             const headers = {
@@ -15,7 +17,7 @@ export default function ($http, $window, $interval) {
                 $http({
                     method: "POST",
                     url: "https://plex.tv/api/v2/pins?strong=true",
-                    headers: headers,
+                    headers,
                 }).then(
                     (res) => {
                         const plexWindowSizes = {
@@ -39,7 +41,7 @@ export default function ($http, $window, $interval) {
                             $http({
                                 method: "GET",
                                 url: `https://plex.tv/api/v2/pins/${res.data.id}`,
-                                headers: headers,
+                                headers,
                             }).then(
                                 async (r2) => {
                                     limit -= poll;
@@ -61,7 +63,7 @@ export default function ($http, $window, $interval) {
                                         $http({
                                             method: "GET",
                                             url: "https://plex.tv/api/v2/resources?includeHttps=1",
-                                            headers: headers,
+                                            headers,
                                         })
                                             .then((r3) => {
                                                 const res_servers = [];
@@ -144,7 +146,7 @@ export default function ($http, $window, $interval) {
                         key: `/library/sections/${res.Directory[i].key}/all`,
                         icon: `${server.uri}${res.Directory[i].composite}?X-Plex-Token=${server.accessToken}`,
                         type: res.Directory[i].type,
-                        genres: genres,
+                        genres,
                     });
                 }
             return sections;
@@ -178,7 +180,7 @@ export default function ($http, $window, $interval) {
         },
         getNested: async (server, lib, includeCollections, errors) => {
             const client = new Plex(server);
-            const key = lib.key;
+            const { key } = lib;
             const res = await client.Get(key);
 
             const size = typeof res.Metadata !== "undefined" ? res.Metadata.length : 0;
@@ -224,11 +226,11 @@ export default function ($http, $window, $interval) {
                         (res.Metadata[i].type === "episode" || res.Metadata[i].type === "movie")
                     )
                         continue;
-                    let year = res.Metadata[i].year;
+                    let { year } = res.Metadata[i];
                     let date = res.Metadata[i].originallyAvailableAt;
-                    let album = undefined;
+                    let album;
                     if (res.Metadata[i].type === "track") {
-                        // complete album year and date
+                        //complete album year and date
                         album = albums[res.Metadata[i].parentKey];
                         if (typeof album !== "undefined") {
                             year = album.year;
@@ -242,7 +244,7 @@ export default function ($http, $window, $interval) {
                         title: res.Metadata[i].title,
                         key: res.Metadata[i].key,
                         ratingKey: res.Metadata[i].ratingKey,
-                        server: server,
+                        server,
                         icon: `${server.uri}${res.Metadata[i].thumb}?X-Plex-Token=${server.accessToken}`,
                         type: res.Metadata[i].type,
                         duration: res.Metadata[i].duration,
@@ -250,15 +252,15 @@ export default function ($http, $window, $interval) {
                         subtitle: res.Metadata[i].subtitle,
                         summary: res.Metadata[i].summary,
                         rating: res.Metadata[i].contentRating,
-                        date: date,
-                        year: year,
+                        date,
+                        year,
                     };
                     if (program.type === "episode" || program.type === "movie" || program.type === "track") {
                         program.plexFile = `${res.Metadata[i].Media[0].Part[0].key}`;
                         program.file = `${res.Metadata[i].Media[0].Part[0].file}`;
                     }
                     if (program.type === "episode") {
-                        // Make sure that video files that contain multiple episodes are only listed once:
+                        //Make sure that video files that contain multiple episodes are only listed once:
                         let anyNewFile = false;
                         for (let j = 0; j < res.Metadata[i].Media.length; j++) {
                             for (let k = 0; k < res.Metadata[i].Media[j].Part.length; k++) {
@@ -319,7 +321,7 @@ export default function ($http, $window, $interval) {
 
                     nestedCollections.push({
                         key: directories[i].key,
-                        title: title,
+                        title,
                         type: "collection",
                         collectionType: res.viewGroup,
                     });
@@ -331,7 +333,7 @@ export default function ($http, $window, $interval) {
         },
     };
     return exported;
-}
+};
 
 function msToTime(duration) {
     const milliseconds = parseInt((duration % 1000) / 100);

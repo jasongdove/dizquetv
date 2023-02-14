@@ -1,4 +1,6 @@
-export default function ($scope, $timeout, dizquetv) {
+"use strict";
+
+module.exports = function ($scope, $timeout, dizquetv) {
     $scope.fillers = [];
     $scope.showFillerConfig = false;
     $scope.selectedFiller = null;
@@ -73,12 +75,12 @@ export default function ($scope, $timeout, dizquetv) {
             }
             $scope.deleteFillerIndex = index;
             $scope.fillers[index].pending = true;
-            const id = $scope.fillers[index].id;
+            const { id } = $scope.fillers[index];
             const channels = await dizquetv.getChannelsUsingFiller(id);
             feedToDeleteFiller({
-                id: id,
+                id,
                 name: $scope.fillers[index].name,
-                channels: channels,
+                channels,
             });
             $timeout();
         } catch (err) {
@@ -101,4 +103,4 @@ export default function ($scope, $timeout, dizquetv) {
             console.error("Error attempting to delete filler", err);
         }
     };
-}
+};

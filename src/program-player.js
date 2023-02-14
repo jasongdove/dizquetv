@@ -1,4 +1,6 @@
-/** ****************
+"use strict";
+
+/******************
  * This module is to take a "program" and return a stream that plays the
  * program. OR the promise fails which would mean that there was an error
  * playing the program.
@@ -18,10 +20,10 @@
  * deal with the thrown error.
  **/
 
-import OfflinePlayer from "./offline-player.js";
-import PlexPlayer from "./plex-player.js";
-import EventEmitter from "events";
-import { getWatermark } from "./helperFuncs.js";
+const OfflinePlayer = require("./offline-player");
+const PlexPlayer = require("./plex-player");
+const EventEmitter = require("events");
+const helperFuncs = require("./helperFuncs");
 
 class ProgramPlayer {
     constructor(context) {
@@ -54,7 +56,7 @@ class ProgramPlayer {
             /* plex */
             this.delegate = new PlexPlayer(context);
         }
-        this.context.watermark = getWatermark(
+        this.context.watermark = helperFuncs.getWatermark(
             context.ffmpegSettings,
             context.channel,
             context.lineupItem.type,
@@ -71,6 +73,7 @@ class ProgramPlayer {
                 const stream = await this.delegate.play(outStream);
                 accept(stream);
                 const emitter = new EventEmitter();
+
                 function end() {
                     reject(Error("Stream ended with no data"));
                     stream.removeAllListeners("data");
@@ -79,6 +82,7 @@ class ProgramPlayer {
                     stream.removeAllListeners("error");
                     emitter.emit("end");
                 }
+
                 stream.on("error", (err) => {
                     reject(Error("Stream ended in error with no data. " + JSON.stringify(err)));
                     end();
@@ -90,6 +94,7 @@ class ProgramPlayer {
             }
         });
     }
+
     async play(outStream) {
         try {
             return await this.playDelegate(outStream);
@@ -102,9 +107,9 @@ class ProgramPlayer {
                 throw Error("Additional error when attempting to play error stream.");
             }
             console.log("Error when attempting to play video. Fallback to error stream: " + err.stack);
-            // Retry once with an error stream:
+            //Retry once with an error stream:
             this.context.lineupItem = {
-                err: err,
+                err,
                 start: this.context.lineupItem.start,
                 streamDuration: this.context.lineupItem.streamDuration,
             };
@@ -115,4 +120,4 @@ class ProgramPlayer {
     }
 }
 
-export default ProgramPlayer;
+module.exports = ProgramPlayer;

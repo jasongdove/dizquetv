@@ -1,30 +1,32 @@
-import { Router } from "express";
-import { generateChannelContext, createLineup } from "./helperFuncs.js";
-import FFMPEG from "./ffmpeg.js";
-import FFMPEG_TEXT from "./ffmpegText.js";
-import { SLACK, START_CHANNEL_GRACE_PERIOD, CHANNEL_STOP_SHIELD, FORGETFULNESS_BUFFER } from "./constants.js";
-import { existsSync } from "fs";
-import ProgramPlayer from "./program-player.js";
-import { getCurrentLineupItem, recordPlayback, clearPlayback } from "./channel-cache.js";
-import wereThereTooManyAttempts from "./throttler.js";
+"use strict";
 
-export const router = video;
+const express = require("express");
+const helperFuncs = require("./helperFuncs");
+const FFMPEG = require("./ffmpeg");
+const FFMPEG_TEXT = require("./ffmpegText");
+const constants = require("./constants");
+const fs = require("fs");
+const ProgramPlayer = require("./program-player");
+const channelCache = require("./channel-cache");
+const wereThereTooManyAttempts = require("./throttler");
+
+module.exports = { router: video, shutdown };
 
 let StreamCount = 0;
 
 let stopPlayback = false;
 
-export async function shutdown() {
+async function shutdown() {
     stopPlayback = true;
 }
 
 function video(channelService, fillerDB, db, programmingService, activeChannelService) {
-    const router = Router();
+    const router = express.Router();
 
     router.get("/setup", (req, res) => {
         const ffmpegSettings = db["ffmpeg-settings"].find()[0];
         // Check if ffmpeg path is valid
-        if (!existsSync(ffmpegSettings.ffmpegPath)) {
+        if (!fs.existsSync(ffmpegSettings.ffmpegPath)) {
             res.status(500).send("FFMPEG path is invalid. The file (executable) doesn't exist.");
             console.error("The FFMPEG Path is invalid. Please check your configuration.");
             return;
@@ -45,7 +47,6 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
         ffmpeg.on("error", (err) => {
             console.error("FFMPEG ERROR", err);
             res.status(500).send("FFMPEG ERROR");
-            return;
         });
         ffmpeg.on("close", () => {
             res.end();
@@ -79,7 +80,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
         const ffmpegSettings = db["ffmpeg-settings"].find()[0];
 
         // Check if ffmpeg path is valid
-        if (!existsSync(ffmpegSettings.ffmpegPath)) {
+        if (!fs.existsSync(ffmpegSettings.ffmpegPath)) {
             res.status(500).send("FFMPEG path is invalid. The file (executable) doesn't exist.");
             console.error("The FFMPEG Path is invalid. Please check your configuration.");
             return;
@@ -109,7 +110,6 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
             console.error("FFMPEG ERROR", err);
             // status was already sent
             stop();
-            return;
         });
 
         ffmpeg.on("close", stop);
@@ -133,12 +133,8 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
         );
         ff.pipe(res);
     };
-    router.get("/video", async (req, res) => {
-        return await concat(req, res, false);
-    });
-    router.get("/radio", async (req, res) => {
-        return await concat(req, res, true);
-    });
+    router.get("/video", async (req, res) => await concat(req, res, false));
+    router.get("/radio", async (req, res) => await concat(req, res, true));
 
     // Stream individual video to ffmpeg concat above. This is used by the server, NOT the client
     const streamFunction = async (req, res, t0, allowSkip) => {
@@ -156,7 +152,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
             return;
         }
 
-        const audioOnly = "true" == req.query.audioOnly;
+        const audioOnly = req.query.audioOnly == "true";
         console.log(`/stream audioOnly=${audioOnly}`);
         const session = parseInt(req.query.session);
         const m3u8 = req.query.m3u8 === "1";
@@ -182,7 +178,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
         const ffmpegSettings = db["ffmpeg-settings"].find()[0];
 
         // Check if ffmpeg path is valid
-        if (!existsSync(ffmpegSettings.ffmpegPath)) {
+        if (!fs.existsSync(ffmpegSettings.ffmpegPath)) {
             res.status(500).send("FFMPEG path is invalid. The file (executable) doesn't exist.");
             console.error("The FFMPEG Path is invalid. Please check your configuration.");
             return;
@@ -216,7 +212,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
                 start: 0,
             };
         } else {
-            lineupItem = getCurrentLineupItem(channel.number, t0);
+            lineupItem = channelCache.getCurrentLineupItem(channel.number, t0);
         }
         if (lineupItem != null) {
             redirectChannels = lineupItem.redirectChannels;
@@ -227,13 +223,13 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
             activeChannelService.peekChannel(t0, channel.number);
 
             while (true) {
-                redirectChannels.push(generateChannelContext(brandChannel));
+                redirectChannels.push(helperFuncs.generateChannelContext(brandChannel));
                 upperBounds.push(prog.program.duration - prog.timeElapsed);
 
                 if (!prog.program.isOffline || prog.program.type != "redirect") {
                     break;
                 }
-                recordPlayback(brandChannel.number, t0, {
+                channelCache.recordPlayback(brandChannel.number, t0, {
                     /* type: 'offline',*/
                     title: "Error",
                     err: Error("Recursive channel redirect found"),
@@ -250,7 +246,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
                     prog = {
                         program: {
                             isOffline: true,
-                            err: err,
+                            err,
                             duration: 60000,
                         },
                         timeElapsed: 0,
@@ -258,7 +254,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
                     continue;
                 }
                 brandChannel = newChannel;
-                lineupItem = getCurrentLineupItem(newChannel.number, t0);
+                lineupItem = channelCache.getCurrentLineupItem(newChannel.number, t0);
                 if (lineupItem != null) {
                     lineupItem = JSON.parse(JSON.stringify(lineupItem));
                     break;
@@ -283,12 +279,16 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
                     duration: t,
                     isOffline: true,
                 };
-            } else if (allowSkip && prog.program.isOffline && prog.program.duration - prog.timeElapsed <= SLACK + 1) {
+            } else if (
+                allowSkip &&
+                prog.program.isOffline &&
+                prog.program.duration - prog.timeElapsed <= constants.SLACK + 1
+            ) {
                 // it's pointless to show the offline screen for such a short time, might as well
                 // skip to the next program
                 const dt = prog.program.duration - prog.timeElapsed;
                 for (let i = 0; i < redirectChannels.length; i++) {
-                    clearPlayback(redirectChannels[i].number);
+                    channelCache.clearPlayback(redirectChannels[i].number);
                 }
                 console.log("Too litlle time before the filler ends, skip to next slot");
                 return await streamFunction(req, res, t0 + dt + 1, false);
@@ -297,12 +297,12 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
                 prog == null ||
                 typeof prog === "undefined" ||
                 prog.program == null ||
-                typeof prog.program == "undefined"
+                typeof prog.program === "undefined"
             ) {
                 throw "No video to play, this means there's a serious unexpected bug or the channel db is corrupted.";
             }
             const fillers = await fillerDB.getFillersFromChannel(brandChannel);
-            const lineup = createLineup(prog, brandChannel, fillers, isFirst);
+            const lineup = helperFuncs.createLineup(prog, brandChannel, fillers, isFirst);
             lineupItem = lineup.shift();
         }
 
@@ -326,7 +326,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
                     lineupItem.streamDuration = Math.min(u2, u);
                     upperBound = lineupItem.streamDuration;
                 }
-                recordPlayback(redirectChannels[i].number, t0, lineupItem);
+                channelCache.recordPlayback(redirectChannels[i].number, t0, lineupItem);
             }
         }
 
@@ -345,7 +345,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
         console.log("=========================================================");
 
         if (!isLoading && !isBetween) {
-            recordPlayback(channel.number, t0, lineupItem);
+            channelCache.recordPlayback(channel.number, t0, lineupItem);
         }
         if (wereThereTooManyAttempts(session, lineupItem)) {
             console.error(
@@ -358,16 +358,16 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
             };
         }
 
-        const combinedChannel = generateChannelContext(brandChannel);
+        const combinedChannel = helperFuncs.generateChannelContext(brandChannel);
         combinedChannel.transcoding = channel.transcoding;
 
         const playerContext = {
-            lineupItem: lineupItem,
-            ffmpegSettings: ffmpegSettings,
+            lineupItem,
+            ffmpegSettings,
             channel: combinedChannel,
-            db: db,
-            m3u8: m3u8,
-            audioOnly: audioOnly,
+            db,
+            m3u8,
+            audioOnly,
         };
 
         let player = new ProgramPlayer(playerContext);
@@ -385,7 +385,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
             "Content-Type": "video/mp2t",
         });
 
-        shieldActiveChannels(redirectChannels, t0, START_CHANNEL_GRACE_PERIOD);
+        shieldActiveChannels(redirectChannels, t0, constants.START_CHANNEL_GRACE_PERIOD);
 
         let t1;
 
@@ -433,7 +433,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
                     }
                     if (shouldStop) {
                         console.log("Playing channel has received an update.");
-                        shieldActiveChannels(redirectChannels, t0, CHANNEL_STOP_SHIELD);
+                        shieldActiveChannels(redirectChannels, t0, constants.CHANNEL_STOP_SHIELD);
                         setTimeout(stop, 100);
                     }
                 } catch (error) {
@@ -448,7 +448,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
                 if (!stopDetected) {
                     stopDetected = true;
                     let t1 = new Date().getTime();
-                    t1 = Math.max(t0 + 1, t1 - FORGETFULNESS_BUFFER - b);
+                    t1 = Math.max(t0 + 1, t1 - constants.FORGETFULNESS_BUFFER - b);
                     for (let i = redirectChannels.length - 1; i >= 0; i--) {
                         activeChannelService.registerChannelStopped(t1, redirectChannels[i].number);
                     }
@@ -516,7 +516,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
 
         const ffmpegSettings = db["ffmpeg-settings"].find()[0];
 
-        cur = "59.0";
+        // const cur = "59.0";
 
         if (ffmpegSettings.enableFFMPEGTranscoding === true) {
             // data += `#EXTINF:${cur},\n`;
@@ -565,7 +565,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
         const ffmpegSettings = db["ffmpeg-settings"].find()[0];
 
         const sessionId = StreamCount++;
-        const audioOnly = "true" == req.query.audioOnly;
+        const audioOnly = req.query.audioOnly == "true";
 
         if (
             ffmpegSettings.enableFFMPEGTranscoding === true &&

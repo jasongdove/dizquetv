@@ -1,4 +1,6 @@
-export default function ($scope, $timeout, dizquetv) {
+"use strict";
+
+module.exports = function ($scope, $timeout, dizquetv) {
     $scope.showss = [];
     $scope.showShowConfig = false;
     $scope.selectedShow = null;
@@ -14,6 +16,7 @@ export default function ($scope, $timeout, dizquetv) {
     $scope.refreshShow();
 
     let feedToShowConfig = () => {};
+    let feedToDeleteShow = feedToShowConfig;
 
     $scope.registerShowConfig = (feed) => {
         feedToShowConfig = feed;
@@ -88,4 +91,4 @@ export default function ($scope, $timeout, dizquetv) {
             console.error("Could not delete show.", err);
         }
     };
-}
+};

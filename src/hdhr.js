@@ -1,7 +1,9 @@
-import { Router } from "express";
-import { Server as SSDP } from "node-ssdp";
+"use strict";
 
-export default hdhr;
+const express = require("express");
+const SSDP = require("node-ssdp").Server;
+
+module.exports = hdhr;
 
 function hdhr(db, channelDB) {
     const server = new SSDP({
@@ -17,7 +19,7 @@ function hdhr(db, channelDB) {
     server.addUSN("upnp:rootdevice");
     server.addUSN("urn:schemas-upnp-org:device:MediaServer:1");
 
-    const router = Router();
+    const router = express.Router();
 
     router.get("/device.xml", (req, res) => {
         const device = getDevice(db, req.protocol + "://" + req.get("host"));
@@ -60,7 +62,7 @@ function hdhr(db, channelDB) {
         res.send(JSON.stringify(lineup));
     });
 
-    return { router: router, ssdp: server };
+    return { router, ssdp: server };
 }
 
 function getDevice(db, host) {
@@ -79,7 +81,7 @@ function getDevice(db, host) {
         LineupURL: `${host}/lineup.json`,
     };
     device.getXml = () => {
-        const str = `<root xmlns="urn:schemas-upnp-org:device-1-0">
+        return `<root xmlns="urn:schemas-upnp-org:device-1-0">
       <URLBase>${device.BaseURL}</URLBase>
       <specVersion>
       <major>1</major>
@@ -95,7 +97,6 @@ function getDevice(db, host) {
       <UDN>uuid:2020-03-S3LA-BG3LIA:2</UDN>
       </device>
       </root>`;
-        return str;
     };
     return device;
 }

@@ -1,4 +1,6 @@
-export default function ($timeout) {
+"use strict";
+
+module.exports = function ($timeout) {
     return {
         restrict: "E",
         templateUrl: "templates/remove-shows.html",
@@ -9,7 +11,7 @@ export default function ($timeout) {
             onDone: "=onDone",
             deleted: "=deleted",
         },
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             scope.toggleShowDeletion = (programId) => {
                 const deletedIdx = scope.deleted.indexOf(programId);
                 if (deletedIdx === -1) {
@@ -26,4 +28,4 @@ export default function ($timeout) {
             };
         },
     };
-}
+};

@@ -1,4 +1,6 @@
-export default function (dizquetv, $timeout) {
+"use strict";
+
+module.exports = function (dizquetv, $timeout) {
     return {
         restrict: "E",
         templateUrl: "templates/plex-server-edit.html",
@@ -7,7 +9,7 @@ export default function (dizquetv, $timeout) {
             state: "=state",
             _onFinish: "=onFinish",
         },
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             scope.state.modified = false;
             scope.loading = { show: false };
             scope.setModified = () => {
@@ -40,9 +42,8 @@ export default function (dizquetv, $timeout) {
                     channelReport.sort((a, b) => {
                         if (a.destroyedPrograms != b.destroyedPrograms) {
                             return b.destroyedPrograms - a.destroyedPrograms;
-                        } else {
-                            return a.channelNumber - b.channelNumber;
                         }
+                        return a.channelNumber - b.channelNumber;
                     });
                     scope.state.success = "The server was deleted.";
                     scope.state.error = "";
@@ -76,4 +77,4 @@ export default function (dizquetv, $timeout) {
             };
         },
     };
-}
+};

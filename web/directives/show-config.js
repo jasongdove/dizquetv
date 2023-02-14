@@ -1,4 +1,6 @@
-export default function ($timeout, commonProgramTools) {
+"use strict";
+
+module.exports = function ($timeout, commonProgramTools) {
     return {
         restrict: "E",
         templateUrl: "templates/show-config.html",
@@ -7,7 +9,7 @@ export default function ($timeout, commonProgramTools) {
             linker: "=linker",
             onDone: "=onDone",
         },
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             scope.showTools = false;
             scope.showPlexLibrary = false;
             scope.content = [];
@@ -38,7 +40,7 @@ export default function ($timeout, commonProgramTools) {
                 return false;
             };
             scope.setUpWatcher = function setupWatchers() {
-                this.$watch("vsRepeat.startIndex", function (val) {
+                this.$watch("vsRepeat.startIndex", (val) => {
                     scope.currentStartIndex = val;
                 });
             };
@@ -90,9 +92,7 @@ export default function ($timeout, commonProgramTools) {
                     id: scope.id,
                 });
             };
-            scope.showList = () => {
-                return !scope.showPlexLibrary;
-            };
+            scope.showList = () => !scope.showPlexLibrary;
             scope.sortShows = () => {
                 scope.content = commonProgramTools.sortShows(scope.content);
                 refreshContentIndexes();
@@ -113,9 +113,7 @@ export default function ($timeout, commonProgramTools) {
                 scope.content = commonProgramTools.removeDuplicates(scope.content);
                 refreshContentIndexes();
             };
-            scope.getProgramDisplayTitle = (x) => {
-                return commonProgramTools.getProgramDisplayTitle(x);
-            };
+            scope.getProgramDisplayTitle = (x) => commonProgramTools.getProgramDisplayTitle(x);
 
             scope.removeSpecials = () => {
                 scope.content = commonProgramTools.removeSpecials(scope.content);
@@ -136,9 +134,22 @@ export default function ($timeout, commonProgramTools) {
                 return date.toISOString().substr(11, 8);
             };
 
-            scope.programSquareStyle = (x) => {
-                return commonProgramTools.programSquareStyle(x);
-            };
+            const interpolate = (() => {
+                const h = (60 * 60 * 1000) / 6;
+                const ix = [0, Number(h), 2 * h, 4 * h, 8 * h, 24 * h];
+                const iy = [0, 1.0, 1.25, 1.5, 1.75, 2.0];
+                const n = ix.length;
+
+                return (x) => {
+                    for (let i = 0; i < n - 1; i++) {
+                        if (ix[i] <= x && (x < ix[i + 1] || i == n - 2)) {
+                            return iy[i] + (iy[i + 1] - iy[i]) * ((x - ix[i]) / (ix[i + 1] - ix[i]));
+                        }
+                    }
+                };
+            })();
+
+            scope.programSquareStyle = (x) => commonProgramTools.programSquareStyle(x);
         },
     };
-}
+};

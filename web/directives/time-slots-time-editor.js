@@ -1,4 +1,6 @@
-export default function ($timeout) {
+"use strict";
+
+module.exports = function ($timeout) {
     return {
         restrict: "E",
         templateUrl: "templates/time-slots-time-editor.html",
@@ -9,7 +11,7 @@ export default function ($timeout) {
             visible: "=visible",
             onDone: "=onDone",
         },
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             let updateNext = true;
             scope.w = 0;
             scope.h = 0;
@@ -44,7 +46,7 @@ export default function ($timeout) {
             });
 
             function pad(x) {
-                let s = "" + x;
+                let s = String(x);
                 if (s.length < 2) {
                     s = "0" + s;
                 }
@@ -102,4 +104,4 @@ export default function ($timeout) {
             };
         },
     };
-}
+};

@@ -1,15 +1,15 @@
-import { EventEmitter } from "events";
-import {
-    TVGUIDE_MAXIMUM_PADDING_LENGTH_MS,
-    TVGUIDE_MAXIMUM_FLEX_DURATION,
-    DEFAULT_GUIDE_STEALTH_DURATION,
-} from "../constants.js";
-const FALLBACK_ICON = "https://raw.githubusercontent.com/vexorain/dizquetv/main/resources/dizquetv.png";
-import throttle from "./throttle.js";
-import { WriteXMLTV } from "../xmltv.js";
+"use strict";
 
-class TVGuideService extends EventEmitter {
-    constructor(db, cacheImageService, eventService, i18next) {
+const events = require("events");
+const constants = require("../constants");
+const FALLBACK_ICON = "https://raw.githubusercontent.com/vexorain/dizquetv/main/resources/dizquetv.png";
+const throttle = require("./throttle");
+
+class TVGuideService extends events.EventEmitter {
+    /****
+     *
+     **/
+    constructor(xmltv, db, cacheImageService, eventService, i18next) {
         super();
         this.cached = null;
         this.lastUpdate = 0;
@@ -17,6 +17,7 @@ class TVGuideService extends EventEmitter {
         this.currentUpdate = -1;
         this.currentLimit = -1;
         this.currentChannels = null;
+        this.xmltv = xmltv;
         this.db = db;
         this.cacheImageService = cacheImageService;
         this.eventService = eventService;
@@ -58,7 +59,7 @@ class TVGuideService extends EventEmitter {
                 this.currentUpdate = this.updateTime;
                 this.currentLimit = this.updateLimit;
                 this.currentChannels = this.updateChannels;
-                const t = "" + new Date();
+                const t = String(new Date());
                 this.eventService?.push("xmltv", {
                     message: `Started building tv-guide at = ${t}`,
                     module: "xmltv",
@@ -112,7 +113,7 @@ class TVGuideService extends EventEmitter {
             };
         }
         if (t < s) {
-            // it's flex time
+            //it's flex time
             return {
                 index: -1,
                 start: t,
@@ -121,54 +122,53 @@ class TVGuideService extends EventEmitter {
                     duration: s - t,
                 },
             };
-        } else {
-            const accumulate = this.accumulateTable[channel.number];
-            if (typeof accumulate === "undefined") {
-                throw Error(channel.number + " wasn't preprocesed correctly???!?");
-            }
-            if (accumulate[channel.programs.length] === 0) {
-                console.log("[tv-guide] for some reason the total channel length is 0");
-                return {
-                    index: -1,
-                    start: t,
-                    program: {
-                        isOffline: true,
-                        duration: 15 * 60 * 1000,
-                    },
-                };
-            }
-            let hi = channel.programs.length;
-            let lo = 0;
-            const d = (t - s) % accumulate[channel.programs.length];
-            const epoch = t - d;
-            while (lo + 1 < hi) {
-                const ha = Math.floor((lo + hi) / 2);
-                if (accumulate[ha] > d) {
-                    hi = ha;
-                } else {
-                    lo = ha;
-                }
-            }
-
-            if (lo < 0 || lo >= channel.programs.length || accumulate[lo + 1] <= d) {
-                console.log("[tv-guide] The binary search algorithm is messed up. Replacing with flex...");
-                return {
-                    index: -1,
-                    start: t,
-                    program: {
-                        isOffline: true,
-                        duration: 15 * 60 * 1000,
-                    },
-                };
-            }
-
-            await this._throttle();
+        }
+        const accumulate = this.accumulateTable[channel.number];
+        if (typeof accumulate === "undefined") {
+            throw Error(channel.number + " wasn't preprocesed correctly???!?");
+        }
+        if (accumulate[channel.programs.length] === 0) {
+            console.log("[tv-guide] for some reason the total channel length is 0");
             return {
-                index: lo,
-                start: epoch + accumulate[lo],
-                program: channel.programs[lo],
+                index: -1,
+                start: t,
+                program: {
+                    isOffline: true,
+                    duration: 15 * 60 * 1000,
+                },
             };
         }
+        let hi = channel.programs.length;
+        let lo = 0;
+        const d = (t - s) % accumulate[channel.programs.length];
+        const epoch = t - d;
+        while (lo + 1 < hi) {
+            const ha = Math.floor((lo + hi) / 2);
+            if (accumulate[ha] > d) {
+                hi = ha;
+            } else {
+                lo = ha;
+            }
+        }
+
+        if (lo < 0 || lo >= channel.programs.length || accumulate[lo + 1] <= d) {
+            console.log("[tv-guide] The binary search algorithm is messed up. Replacing with flex...");
+            return {
+                index: -1,
+                start: t,
+                program: {
+                    isOffline: true,
+                    duration: 15 * 60 * 1000,
+                },
+            };
+        }
+
+        await this._throttle();
+        return {
+            index: lo,
+            start: epoch + accumulate[lo],
+            program: channel.programs[lo],
+        };
     }
 
     async getChannelPlaying(channel, previousKnown, t, depth) {
@@ -182,10 +182,10 @@ class TVGuideService extends EventEmitter {
             previousKnown.program.duration == channel.programs[previousKnown.index].duration &&
             previousKnown.start + previousKnown.program.duration == t
         ) {
-            // turns out we know the index.
+            //turns out we know the index.
             const index = (previousKnown.index + 1) % channel.programs.length;
             playing = {
-                index: index,
+                index,
                 program: channel.programs[index],
                 start: t,
             };
@@ -241,7 +241,7 @@ class TVGuideService extends EventEmitter {
                     program2.duration = duration;
                     playing = {
                         index: playing.index,
-                        start: start,
+                        start,
                         program: program2,
                     };
                 }
@@ -268,15 +268,15 @@ class TVGuideService extends EventEmitter {
             if (
                 programs.length > 0 &&
                 isProgramFlex(x.program, channel) &&
-                (x.program.duration <= TVGUIDE_MAXIMUM_PADDING_LENGTH_MS ||
+                (x.program.duration <= constants.TVGUIDE_MAXIMUM_PADDING_LENGTH_MS ||
                     isProgramFlex(programs[programs.length - 1].program, channel))
             ) {
-                // meld with previous
+                //meld with previous
                 const y = clone(programs[programs.length - 1]);
                 y.program.duration += x.program.duration;
                 melded += x.program.duration;
                 if (
-                    melded > TVGUIDE_MAXIMUM_PADDING_LENGTH_MS &&
+                    melded > constants.TVGUIDE_MAXIMUM_PADDING_LENGTH_MS &&
                     !isProgramFlex(programs[programs.length - 1].program, channel)
                 ) {
                     y.program.duration -= melded;
@@ -339,8 +339,8 @@ class TVGuideService extends EventEmitter {
         for (let i = 0; i < programs.length; i++) {
             await this._throttle();
             if (isProgramFlex(programs[i].program, channel)) {
-                let start = programs[i].start;
-                let duration = programs[i].program.duration;
+                let { start } = programs[i];
+                let { duration } = programs[i].program;
                 if (start <= t0) {
                     const M = 5 * 60 * 1000;
                     const newStart = t0 - (t0 % M);
@@ -350,12 +350,15 @@ class TVGuideService extends EventEmitter {
                     }
                 }
                 while (start < t1 && duration > 0) {
-                    let d = Math.min(duration, TVGUIDE_MAXIMUM_FLEX_DURATION);
-                    if (duration - TVGUIDE_MAXIMUM_FLEX_DURATION <= TVGUIDE_MAXIMUM_PADDING_LENGTH_MS) {
+                    let d = Math.min(duration, constants.TVGUIDE_MAXIMUM_FLEX_DURATION);
+                    if (
+                        duration - constants.TVGUIDE_MAXIMUM_FLEX_DURATION <=
+                        constants.TVGUIDE_MAXIMUM_PADDING_LENGTH_MS
+                    ) {
                         d = duration;
                     }
                     const x = {
-                        start: start,
+                        start,
                         program: {
                             isOffline: true,
                             duration: d,
@@ -391,7 +394,7 @@ class TVGuideService extends EventEmitter {
                 icon: FALLBACK_ICON,
             };
             result[1] = {
-                channel: channel,
+                channel,
                 programs: [
                     makeEntry(channel, {
                         start: t0 - (t0 % (30 * 60 * 1000)),
@@ -438,8 +441,13 @@ class TVGuideService extends EventEmitter {
 
     async refreshXML() {
         const xmltvSettings = this.db["xmltv-settings"].find()[0];
-        await WriteXMLTV(this.cached, xmltvSettings, async () => await this._throttle(), this.cacheImageService);
-        const t = "" + new Date();
+        await this.xmltv.WriteXMLTV(
+            this.cached,
+            xmltvSettings,
+            async () => await this._throttle(),
+            this.cacheImageService,
+        );
+        const t = String(new Date());
         this.emit("xmltv-updated", { time: t });
         this.eventService?.push("xmltv", {
             message: this.i18next.t("tvGuide.xmltv_updated", { t }),
@@ -471,7 +479,7 @@ class TVGuideService extends EventEmitter {
         if (typeof channel === undefined) {
             return null;
         }
-        const programs = channel.programs;
+        const { programs } = channel;
         const result = {
             icon: channel.channel.icon,
             name: channel.channel.name,
@@ -510,9 +518,8 @@ function _wait(t) {
 function getChannelStealthDuration(channel) {
     if (typeof channel.guideMinimumDurationSeconds !== "undefined" && !isNaN(channel.guideMinimumDurationSeconds)) {
         return channel.guideMinimumDurationSeconds * 1000;
-    } else {
-        return DEFAULT_GUIDE_STEALTH_DURATION;
     }
+    return constants.DEFAULT_GUIDE_STEALTH_DURATION;
 }
 
 function isProgramFlex(program, channel) {
@@ -532,9 +539,9 @@ function makeChannelEntry(channel) {
 }
 
 function makeEntry(channel, x) {
-    let title = undefined;
-    let icon = undefined;
-    let sub = undefined;
+    let title;
+    let icon;
+    let sub;
     if (isProgramFlex(x.program, channel)) {
         if (typeof channel.guideFlexPlaceholder === "string" && channel.guideFlexPlaceholder !== "") {
             title = channel.guideFlexPlaceholder;
@@ -558,16 +565,16 @@ function makeEntry(channel, x) {
     if (typeof title === "undefined") {
         title = ".";
     }
-    // what data is needed here?
+    //what data is needed here?
     return {
         start: new Date(x.start).toISOString(),
         stop: new Date(x.start + x.program.duration).toISOString(),
         summary: x.program.summary,
         date: x.program.date,
         rating: x.program.rating,
-        icon: icon,
-        title: title,
-        sub: sub,
+        icon,
+        title,
+        sub,
     };
 }
 
@@ -578,4 +585,4 @@ function formatDateYYYYMMDD(date) {
     return year + "-" + month + "-" + day;
 }
 
-export default TVGuideService;
+module.exports = TVGuideService;

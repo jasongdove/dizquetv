@@ -1,4 +1,6 @@
-export default function ($timeout) {
+"use strict";
+
+module.exports = function ($timeout) {
     return {
         restrict: "E",
         templateUrl: "templates/delete-filler.html",
@@ -7,7 +9,7 @@ export default function ($timeout) {
             linker: "=linker",
             onExit: "=onExit",
         },
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             scope.name = "";
             scope.channels = [];
             scope.visible = false;
@@ -29,4 +31,4 @@ export default function ($timeout) {
             };
         },
     };
-}
+};

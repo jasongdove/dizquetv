@@ -1,6 +1,8 @@
+"use strict";
+
 const MINUTE = 60 * 1000;
 
-export default function ($scope, $timeout, dizquetv) {
+module.exports = function ($scope, $timeout, dizquetv) {
     $scope.offset = 0;
     $scope.M = 60 * MINUTE;
     $scope.zoomLevel = 3;
@@ -18,15 +20,13 @@ export default function ($scope, $timeout, dizquetv) {
         minute: "numeric",
     });
 
-    const hourMinute = (d) => {
-        return intl.format(d);
-    };
+    const hourMinute = (d) => intl.format(d);
 
     $scope.updateBasics = () => {
         $scope.channelNumberWidth = 5;
         $scope.channelIconWidth = 8;
         $scope.channelWidth = $scope.channelNumberWidth + $scope.channelIconWidth;
-        // we want 1 minute = 1 colspan
+        //we want 1 minute = 1 colspan
         $scope.colspanPercent = (100 - $scope.channelWidth) / ($scope.T / MINUTE);
         $scope.channelColspan = Math.floor($scope.channelWidth / $scope.colspanPercent);
         $scope.channelNumberColspan = Math.floor($scope.channelNumberWidth / $scope.colspanPercent);
@@ -42,7 +42,7 @@ export default function ($scope, $timeout, dizquetv) {
     $scope.channelNumberWidth = 5;
     $scope.channelIconWidth = 8;
     $scope.channelWidth = $scope.channelNumberWidth + $scope.channelIconWidth;
-    // we want 1 minute = 1 colspan
+    //we want 1 minute = 1 colspan
 
     $scope.applyLater = () => {
         $timeout(() => $scope.$apply(), 0);
@@ -75,7 +75,7 @@ export default function ($scope, $timeout, dizquetv) {
 
     $scope.refreshManaged = async (skipStatus) => {
         $scope.t1 = new Date().getTime();
-        $scope.t1 = $scope.t1 - ($scope.t1 % MINUTE);
+        $scope.t1 -= $scope.t1 % MINUTE;
         $scope.t0 = $scope.t1 - $scope.before + $scope.offset;
         $scope.times = [];
 
@@ -199,12 +199,8 @@ export default function ($scope, $timeout, dizquetv) {
         $scope.zoomLevel = Math.max(1, $scope.zoomLevel - 1);
         await $scope.adjustZoom();
     };
-    $scope.zoomOutEnabled = () => {
-        return $scope.zoomLevel < 5;
-    };
-    $scope.zoomInEnabled = () => {
-        return $scope.zoomLevel > 1;
-    };
+    $scope.zoomOutEnabled = () => $scope.zoomLevel < 5;
+    $scope.zoomInEnabled = () => $scope.zoomLevel > 1;
 
     $scope.next = async () => {
         $scope.offset += ($scope.M * 7) / 8;
@@ -214,12 +210,8 @@ export default function ($scope, $timeout, dizquetv) {
         $scope.offset -= ($scope.M * 7) / 8;
         await $scope.adjustZoom();
     };
-    $scope.backEnabled = () => {
-        return $scope.enableBack;
-    };
-    $scope.nextEnabled = () => {
-        return $scope.enableNext;
-    };
+    $scope.backEnabled = () => $scope.enableBack;
+    $scope.nextEnabled = () => $scope.enableNext;
 
     $scope.loadChannel = async (number) => {
         console.log(`number=${number}`);
@@ -259,7 +251,7 @@ export default function ($scope, $timeout, dizquetv) {
             let hasStart = true;
             let hasStop = true;
             if (a < $scope.t0) {
-                // cut-off
+                //cut-off
                 a = $scope.t0;
                 hasStart = false;
                 $scope.enableBack = true;
@@ -277,19 +269,19 @@ export default function ($scope, $timeout, dizquetv) {
                 hasStop = false;
                 $scope.enableNext = true;
             }
-            let subTitle = undefined;
-            let episodeTitle = undefined;
+            let subTitle;
+            let episodeTitle;
             let altTitle = hourMinute(ad) + "-" + hourMinute(bd);
             if (typeof program.title !== "undefined") {
                 altTitle = altTitle + " · " + program.title;
             }
 
             if (typeof program.sub !== "undefined") {
-                ps = "" + program.sub.season;
+                ps = String(program.sub.season);
                 if (ps.length < 2) {
                     ps = "0" + ps;
                 }
-                pe = "" + program.sub.episode;
+                pe = String(program.sub.episode);
                 if (pe.length < 2) {
                     pe = "0" + pe;
                 }
@@ -303,10 +295,10 @@ export default function ($scope, $timeout, dizquetv) {
             }
             ch.programs.push({
                 duration: addDuration(b - a),
-                altTitle: altTitle,
+                altTitle,
                 showTitle: program.title,
-                subTitle: subTitle,
-                episodeTitle: episodeTitle,
+                subTitle,
+                episodeTitle,
                 start: hasStart,
                 end: hasStop,
             });
@@ -350,4 +342,4 @@ export default function ($scope, $timeout, dizquetv) {
             console.error(err);
         }
     };
-}
+};

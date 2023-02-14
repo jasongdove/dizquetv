@@ -1,9 +1,11 @@
+"use strict";
+
 /**
  * Manager and Generate M3U content
  *
  * @class M3uService
  */
-export default class M3uService {
+class M3uService {
     constructor(fileCacheService, channelService) {
         this.channelService = channelService;
         this.cacheService = fileCacheService;
@@ -17,7 +19,7 @@ export default class M3uService {
      * Get the channel list in HLS or M3U
      *
      * @param {string} [type='m3u'] List type
-     * @return {promise} Return a Promise with HLS or M3U file content
+     * @returns {promise} Return a Promise with HLS or M3U file content
      * @memberof M3uService
      */
     getChannelList(host) {
@@ -41,9 +43,7 @@ export default class M3uService {
         }
         const channels = await this.channelService.getAllChannels();
 
-        channels.sort((a, b) => {
-            return parseInt(a.number) < parseInt(b.number) ? -1 : 1;
-        });
+        channels.sort((a, b) => (parseInt(a.number) < parseInt(b.number) ? -1 : 1));
 
         const tvg = `{{host}}/api/xmltv.xml`;
 
@@ -76,7 +76,7 @@ export default class M3uService {
      *
      * @param {*} host
      * @param {*} data
-     * @return
+     * @returns
      * @memberof M3uService
      */
     replaceHostOnM3u(host, data) {
@@ -92,3 +92,5 @@ export default class M3uService {
         this.cacheReady = false;
     }
 }
+
+module.exports = M3uService;

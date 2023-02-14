@@ -1,4 +1,6 @@
-export default function ($timeout, dizquetv, getShowData) {
+"use strict";
+
+module.exports = function ($timeout, dizquetv, getShowData) {
     const DAY = 24 * 60 * 60 * 1000;
     const WEEK = 7 * DAY;
     const WEEK_DAYS = ["Thursday", "Friday", "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"];
@@ -12,7 +14,7 @@ export default function ($timeout, dizquetv, getShowData) {
             onDone: "=onDone",
         },
 
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             scope.limit = 50000;
             scope.visible = false;
             scope.fake = { time: -1 };
@@ -34,14 +36,15 @@ export default function ($timeout, dizquetv, getShowData) {
                     fake: { time: -1 },
                 };
             }
+
             reset();
 
             function loadBackup(backup) {
                 scope.schedule = JSON.parse(JSON.stringify(backup));
-                if (typeof scope.schedule.pad == "undefined") {
+                if (typeof scope.schedule.pad === "undefined") {
                     scope.schedule.pad = 1;
                 }
-                const slots = scope.schedule.slots;
+                const { slots } = scope.schedule;
                 for (let i = 0; i < slots.length; i++) {
                     let found = false;
                     for (let j = 0; j < scope.showOptions.length; j++) {
@@ -66,7 +69,7 @@ export default function ($timeout, dizquetv, getShowData) {
             }
 
             const getTitle = (index) => {
-                const showId = scope.schedule.slots[index].showId;
+                const { showId } = scope.schedule.slots[index];
                 for (let i = 0; i < scope.showOptions.length; i++) {
                     if (scope.showOptions[i].id == showId) {
                         return scope.showOptions[i].description;
@@ -74,25 +77,23 @@ export default function ($timeout, dizquetv, getShowData) {
                 }
                 return "Uknown";
             };
-            scope.isWeekly = () => {
-                return scope.schedule.period === WEEK;
-            };
+            scope.isWeekly = () => scope.schedule.period === WEEK;
             scope.periodChanged = () => {
                 if (scope.isWeekly()) {
-                    // From daily to weekly
+                    //From daily to weekly
                     const l = scope.schedule.slots.length;
                     for (let i = 0; i < l; i++) {
                         const t = scope.schedule.slots[i].time;
                         scope.schedule.slots[i].time = t % DAY;
                         for (let j = 1; j < 7; j++) {
-                            // clone the slot for every day of the week
+                            //clone the slot for every day of the week
                             const c = JSON.parse(angular.toJson(scope.schedule.slots[i]));
                             c.time += j * DAY;
                             scope.schedule.slots.push(c);
                         }
                     }
                 } else {
-                    // From weekly to daily
+                    //From weekly to daily
                     const newSlots = [];
                     const seen = {};
                     for (let i = 0; i < scope.schedule.slots.length; i++) {
@@ -111,7 +112,7 @@ export default function ($timeout, dizquetv, getShowData) {
                 const t = scope.schedule.slots[index].time;
                 scope._editedTime = {
                     time: t,
-                    index: index,
+                    index,
                     isWeekly: scope.isWeekly(),
                     title: getTitle(index),
                 };
@@ -141,9 +142,8 @@ export default function ($timeout, dizquetv, getShowData) {
                     const w = Math.floor(t / DAY);
                     const t2 = t % DAY;
                     return WEEK_DAYS[w].substring(0, 3) + " " + niceLookingTime(t2);
-                } else {
-                    return niceLookingTime(t);
                 }
+                return niceLookingTime(t);
             };
             scope.timeColumnClass = () => {
                 const r = {};
@@ -199,11 +199,10 @@ export default function ($timeout, dizquetv, getShowData) {
                 { id: "shuffle", description: "Shuffle" },
             ];
 
-            const doWait = (millis) => {
-                return new Promise((resolve) => {
+            const doWait = (millis) =>
+                new Promise((resolve) => {
                     $timeout(resolve, millis);
                 });
-            };
 
             const doIt = async (fromInstant) => {
                 scope.schedule.timeZoneOffset = new Date().getTimezoneOffset();
@@ -238,9 +237,7 @@ export default function ($timeout, dizquetv, getShowData) {
                         }
                     }
                 });
-                scope.showOptions = shows.map((show) => {
-                    return show;
-                });
+                scope.showOptions = shows.map((show) => show);
                 scope.showOptions.push({
                     id: "flex.",
                     description: "Flex",
@@ -257,7 +254,7 @@ export default function ($timeout, dizquetv, getShowData) {
             };
 
             scope.linker({
-                startDialog: startDialog,
+                startDialog,
             });
 
             scope.finished = async (cancel, fromInstant) => {
@@ -291,9 +288,7 @@ export default function ($timeout, dizquetv, getShowData) {
                 scope.schedule.slots.splice(index, 1);
             };
 
-            scope.hasTimeError = (slot) => {
-                return typeof slot.timeError !== "undefined";
-            };
+            scope.hasTimeError = (slot) => typeof slot.timeError !== "undefined";
 
             scope.disableCreateLineup = () => {
                 if (scope.badTimes) {
@@ -308,21 +303,16 @@ export default function ($timeout, dizquetv, getShowData) {
                 return false;
             };
 
-            scope.hideCreateLineup = () => {
-                return scope.disableCreateLineup() && scope.schedule.slots.length == 0 && scope.hadBackup;
-            };
+            scope.hideCreateLineup = () =>
+                scope.disableCreateLineup() && scope.schedule.slots.length == 0 && scope.hadBackup;
 
-            scope.showResetSlots = () => {
-                return scope.hideCreateLineup();
-            };
+            scope.showResetSlots = () => scope.hideCreateLineup();
 
-            scope.canShowSlot = (slot) => {
-                return slot.showId != "flex." && !slot.showId.startsWith("redirect.");
-            };
+            scope.canShowSlot = (slot) => slot.showId != "flex." && !slot.showId.startsWith("redirect.");
 
             scope.refreshSlots = () => {
                 scope.badTimes = false;
-                // "Bubble sort ought to be enough for anybody"
+                //"Bubble sort ought to be enough for anybody"
                 for (let i = 0; i < scope.schedule.slots.length; i++) {
                     for (let j = i + 1; j < scope.schedule.slots.length; j++) {
                         if (scope.schedule.slots[j].time < scope.schedule.slots[i].time) {
@@ -356,13 +346,12 @@ export default function ($timeout, dizquetv, getShowData) {
         const d = getShowData(program);
         if (!d.hasShow) {
             return null;
-        } else {
-            d.description = d.showDisplayName;
-            d.id = d.showId;
-            return d;
         }
+        d.description = d.showDisplayName;
+        d.id = d.showId;
+        return d;
     }
-}
+};
 
 function niceLookingTime(t) {
     const d = new Date(t);

@@ -1,8 +1,17 @@
-import { getProgramLastPlayTime, getFillerLastPlayTime } from "./channel-cache.js";
-import { SLACK } from "./constants.js";
-import { Random as _Random, MersenneTwister19937 } from "random-js";
-const Random = _Random;
-const random = new Random(MersenneTwister19937.autoSeed());
+"use strict";
+
+module.exports = {
+    getCurrentProgramAndTimeElapsed,
+    createLineup,
+    getWatermark,
+    generateChannelContext,
+};
+
+const channelCache = require("./channel-cache");
+const { SLACK } = require("./constants");
+const randomJS = require("random-js");
+const { Random } = randomJS;
+const random = new Random(randomJS.MersenneTwister19937.autoSeed());
 
 const CHANNEL_CONTEXT_KEYS = [
     "disableFillerOverlay",
@@ -15,10 +24,9 @@ const CHANNEL_CONTEXT_KEYS = [
     "number",
 ];
 
-const _random = random;
-export { _random as random };
+module.exports.random = random;
 
-export function getCurrentProgramAndTimeElapsed(date, channel) {
+function getCurrentProgramAndTimeElapsed(date, channel) {
     const channelStartTime = new Date(channel.startTime).getTime();
     if (channelStartTime > date) {
         const t0 = date;
@@ -53,13 +61,13 @@ export function getCurrentProgramAndTimeElapsed(date, channel) {
 
     return {
         program: channel.programs[currentProgramIndex],
-        timeElapsed: timeElapsed,
+        timeElapsed,
         programIndex: currentProgramIndex,
     };
 }
 
-export function createLineup(obj, channel, fillers, isFirst) {
-    let timeElapsed = obj.timeElapsed;
+function createLineup(obj, channel, fillers, isFirst) {
+    let { timeElapsed } = obj;
     // Start time of a file is never consistent unless 0. Run time of an episode can vary.
     // When within 30 seconds of start time, just make the time 0 to smooth things out
     // Helps prevents loosing first few seconds of an episode upon lineup change
@@ -77,15 +85,15 @@ export function createLineup(obj, channel, fillers, isFirst) {
             streamDuration: remaining,
             duration: remaining,
             start: 0,
-            beginningOffset: beginningOffset,
+            beginningOffset,
         });
         return lineup;
     }
 
     if (activeProgram.isOffline === true) {
-        // offline case
+        //offline case
         let remaining = activeProgram.duration - timeElapsed;
-        // look for a random filler to play
+        //look for a random filler to play
         let filler = null;
         let special = null;
 
@@ -113,12 +121,12 @@ export function createLineup(obj, channel, fillers, isFirst) {
                 if (filler.duration > remaining) {
                     fillerstart = filler.duration - remaining;
                 } else {
-                    ffillerstart = 0;
+                    fillerstart = 0;
                 }
             } else if (isFirst) {
                 fillerstart = Math.max(0, filler.duration - remaining);
-                // it's boring and odd to tune into a channel and it's always
-                // the start of a commercial.
+                //it's boring and odd to tune into a channel and it's always
+                //the start of a commercial.
                 const more = Math.max(0, filler.duration - fillerstart - 15000 - SLACK);
                 fillerstart += random.integer(0, more);
             }
@@ -134,21 +142,21 @@ export function createLineup(obj, channel, fillers, isFirst) {
                 streamDuration: Math.max(1, Math.min(filler.duration - fillerstart, remaining)),
                 duration: filler.duration,
                 fillerId: filler.fillerId,
-                beginningOffset: beginningOffset,
+                beginningOffset,
                 serverKey: filler.serverKey,
             });
             return lineup;
         }
         // pick the offline screen
         remaining = Math.min(remaining, 10 * 60 * 1000);
-        // don't display the offline screen for longer than 10 minutes. Maybe the
-        // channel's admin might change the schedule during that time and then
-        // it would be better to start playing the content.
+        //don't display the offline screen for longer than 10 minutes. Maybe the
+        //channel's admin might change the schedule during that time and then
+        //it would be better to start playing the content.
         lineup.push({
             type: "offline",
             title: "Channel Offline",
             streamDuration: remaining,
-            beginningOffset: beginningOffset,
+            beginningOffset,
             duration: remaining,
             start: 0,
         });
@@ -170,7 +178,7 @@ export function createLineup(obj, channel, fillers, isFirst) {
             ratingKey: activeProgram.ratingKey,
             start: timeElapsed,
             streamDuration: activeProgram.duration - timeElapsed,
-            beginningOffset: beginningOffset,
+            beginningOffset,
             duration: activeProgram.duration,
             serverKey: activeProgram.serverKey,
         },
@@ -196,7 +204,7 @@ function pickRandomWithMaxDuration(channel, fillers, maxDuration) {
         channel.fillerRepeatCooldown = 30 * 60 * 1000;
     }
     let listM = 0;
-    let fillerId = undefined;
+    let fillerId;
     for (let j = 0; j < fillers.length; j++) {
         list = fillers[j].content;
         let pickedList = false;
@@ -206,7 +214,7 @@ function pickRandomWithMaxDuration(channel, fillers, maxDuration) {
             const clip = list[i];
             // a few extra milliseconds won't hurt anyone, would it? dun dun dun
             if (clip.duration <= maxDuration + SLACK) {
-                const t1 = getProgramLastPlayTime(channel.number, clip);
+                const t1 = channelCache.getProgramLastPlayTime(channel.number, clip);
                 let timeSince = t1 == 0 ? D : t0 - t1;
 
                 if (timeSince < channel.fillerRepeatCooldown - SLACK) {
@@ -215,12 +223,12 @@ function pickRandomWithMaxDuration(channel, fillers, maxDuration) {
                         minimumWait = Math.min(minimumWait, w);
                     }
                     timeSince = 0;
-                    // 30 minutes is too little, don't repeat it at all
+                    //30 minutes is too little, don't repeat it at all
                 } else if (!pickedList) {
-                    const t1 = getFillerLastPlayTime(channel.number, fillers[j].id);
+                    const t1 = channelCache.getFillerLastPlayTime(channel.number, fillers[j].id);
                     const timeSince = t1 == 0 ? D : t0 - t1;
                     if (timeSince + SLACK >= fillers[j].cooldown) {
-                        // should we pick this list?
+                        //should we pick this list?
                         listM += fillers[j].weight;
                         if (weighedPick(fillers[j].weight, listM)) {
                             pickedList = true;
@@ -261,7 +269,7 @@ function pickRandomWithMaxDuration(channel, fillers, maxDuration) {
 
     return {
         filler: pick,
-        minimumWait: minimumWait,
+        minimumWait,
     };
 }
 
@@ -276,12 +284,12 @@ function norm_d(x) {
 
 function norm_s(x) {
     let y = Math.ceil(x / 600) + 1;
-    y = y * y;
+    y *= y;
     return Math.ceil(y / 1000000) + 1;
 }
 
 // any channel thing used here should be added to channel context
-export function getWatermark(ffmpegSettings, channel, type) {
+function getWatermark(ffmpegSettings, channel, type) {
     if (!ffmpegSettings.enableFFMPEGTranscoding || ffmpegSettings.disableChannelOverlay) {
         return null;
     }
@@ -293,7 +301,7 @@ export function getWatermark(ffmpegSettings, channel, type) {
         return null;
     }
     let e = false;
-    let icon = undefined;
+    let icon;
     let watermark = {};
     if (typeof channel.watermark !== "undefined") {
         watermark = channel.watermark;
@@ -322,7 +330,7 @@ export function getWatermark(ffmpegSettings, channel, type) {
     return result;
 }
 
-export function generateChannelContext(channel) {
+function generateChannelContext(channel) {
     const channelContext = {};
     for (let i = 0; i < CHANNEL_CONTEXT_KEYS.length; i++) {
         const key = CHANNEL_CONTEXT_KEYS[i];

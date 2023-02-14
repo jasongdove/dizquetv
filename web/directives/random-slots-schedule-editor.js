@@ -1,4 +1,6 @@
-export default function ($timeout, dizquetv, getShowData) {
+"use strict";
+
+module.exports = function ($timeout, dizquetv, getShowData) {
     const MINUTE = 60 * 1000;
     const HOUR = 60 * MINUTE;
     const DAY = 24 * HOUR;
@@ -13,7 +15,7 @@ export default function ($timeout, dizquetv, getShowData) {
             onDone: "=onDone",
         },
 
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             scope.limit = 50000;
             scope.visible = false;
 
@@ -34,14 +36,15 @@ export default function ($timeout, dizquetv, getShowData) {
                     pad: 1,
                 };
             }
+
             reset();
 
             function loadBackup(backup) {
                 scope.schedule = JSON.parse(JSON.stringify(backup));
-                if (typeof scope.schedule.pad == "undefined") {
+                if (typeof scope.schedule.pad === "undefined") {
                     scope.schedule.pad = 1;
                 }
-                const slots = scope.schedule.slots;
+                const { slots } = scope.schedule;
                 for (let i = 0; i < slots.length; i++) {
                     let found = false;
                     for (let j = 0; j < scope.showOptions.length; j++) {
@@ -67,18 +70,7 @@ export default function ($timeout, dizquetv, getShowData) {
                 scope.refreshSlots();
             }
 
-            getTitle = (index) => {
-                const showId = scope.schedule.slots[index].showId;
-                for (let i = 0; i < scope.showOptions.length; i++) {
-                    if (scope.showOptions[i].id == showId) {
-                        return scope.showOptions[i].description;
-                    }
-                }
-                return "Unknown";
-            };
-            scope.isWeekly = () => {
-                return scope.schedule.period === WEEK;
-            };
+            scope.isWeekly = () => scope.schedule.period === WEEK;
             scope.addSlot = () => {
                 scope.schedule.slots.push({
                     duration: 30 * MINUTE,
@@ -87,12 +79,8 @@ export default function ($timeout, dizquetv, getShowData) {
                     cooldown: 0,
                 });
             };
-            scope.timeColumnClass = () => {
-                return { "col-md-1": true };
-            };
-            scope.programColumnClass = () => {
-                return { "col-md-6": true };
-            };
+            scope.timeColumnClass = () => ({ "col-md-1": true });
+            scope.programColumnClass = () => ({ "col-md-6": true });
             scope.durationOptions = [
                 { id: 5 * MINUTE, description: "5 Minutes" },
                 { id: 10 * MINUTE, description: "10 Minutes" },
@@ -101,7 +89,7 @@ export default function ($timeout, dizquetv, getShowData) {
                 { id: 25 * MINUTE, description: "25 Minutes" },
                 { id: 30 * MINUTE, description: "30 Minutes" },
                 { id: 45 * MINUTE, description: "45 Minutes" },
-                { id: 1 * HOUR, description: "1 Hour" },
+                { id: Number(HOUR), description: "1 Hour" },
                 { id: 90 * MINUTE, description: "90 Minutes" },
                 { id: 100 * MINUTE, description: "100 Minutes" },
                 { id: 2 * HOUR, description: "2 Hours" },
@@ -112,11 +100,11 @@ export default function ($timeout, dizquetv, getShowData) {
                 { id: 8 * HOUR, description: "8 Hours" },
                 { id: 10 * HOUR, description: "10 Hours" },
                 { id: 12 * HOUR, description: "12 Hours" },
-                { id: 1 * DAY, description: "1 Day" },
+                { id: Number(DAY), description: "1 Day" },
             ];
             scope.cooldownOptions = [
                 { id: 0, description: "No cooldown" },
-                { id: 1 * MINUTE, description: "1 Minute" },
+                { id: Number(MINUTE), description: "1 Minute" },
                 { id: 5 * MINUTE, description: "5 Minutes" },
                 { id: 10 * MINUTE, description: "10 Minutes" },
                 { id: 15 * MINUTE, description: "15 Minutes" },
@@ -124,7 +112,7 @@ export default function ($timeout, dizquetv, getShowData) {
                 { id: 25 * MINUTE, description: "25 Minutes" },
                 { id: 30 * MINUTE, description: "30 Minutes" },
                 { id: 45 * MINUTE, description: "45 Minutes" },
-                { id: 1 * HOUR, description: "1 Hour" },
+                { id: Number(HOUR), description: "1 Hour" },
                 { id: 90 * MINUTE, description: "90 Minutes" },
                 { id: 100 * MINUTE, description: "100 Minutes" },
                 { id: 2 * HOUR, description: "2 Hours" },
@@ -135,8 +123,8 @@ export default function ($timeout, dizquetv, getShowData) {
                 { id: 8 * HOUR, description: "8 Hours" },
                 { id: 10 * HOUR, description: "10 Hours" },
                 { id: 12 * HOUR, description: "12 Hours" },
-                { id: 1 * DAY, description: "1 Day" },
-                { id: 1 * DAY, description: "2 Days" },
+                { id: Number(DAY), description: "1 Day" },
+                { id: Number(DAY), description: "2 Days" },
                 { id: 3 * DAY + 12 * HOUR, description: "3.5 Days" },
                 { id: 7 * DAY, description: "1 Week" },
             ];
@@ -153,7 +141,7 @@ export default function ($timeout, dizquetv, getShowData) {
 
             scope.padOptions = [
                 { id: 1, description: "Do not pad" },
-                { id: 1 * MINUTE, description: "0:00, 0:01, 0:02, ..., 0:59" },
+                { id: Number(MINUTE), description: "0:00, 0:01, 0:02, ..., 0:59" },
                 { id: 5 * MINUTE, description: "0:00, 0:05, 0:10, ..., 0:55" },
                 { id: 10 * 60 * 1000, description: "0:00, 0:10, 0:20, ..., 0:50" },
                 { id: 15 * 60 * 1000, description: "0:00, 0:15, 0:30, ..., 0:45" },
@@ -171,11 +159,10 @@ export default function ($timeout, dizquetv, getShowData) {
                 { id: "shuffle", description: "Shuffle" },
             ];
 
-            const doWait = (millis) => {
-                return new Promise((resolve) => {
+            const doWait = (millis) =>
+                new Promise((resolve) => {
                     $timeout(resolve, millis);
                 });
-            };
 
             const doIt = async (fromInstant) => {
                 const t0 = new Date().getTime();
@@ -211,9 +198,7 @@ export default function ($timeout, dizquetv, getShowData) {
                         }
                     }
                 });
-                scope.showOptions = shows.map((show) => {
-                    return show;
-                });
+                scope.showOptions = shows.map((show) => show);
                 scope.showOptions.push({
                     id: "flex.",
                     description: "Flex",
@@ -230,7 +215,7 @@ export default function ($timeout, dizquetv, getShowData) {
             };
 
             scope.linker({
-                startDialog: startDialog,
+                startDialog,
             });
 
             scope.finished = async (cancel, fromInstant) => {
@@ -263,9 +248,7 @@ export default function ($timeout, dizquetv, getShowData) {
                 scope.schedule.slots.splice(index, 1);
             };
 
-            scope.hasTimeError = (slot) => {
-                return typeof slot.timeError !== "undefined";
-            };
+            scope.hasTimeError = (slot) => typeof slot.timeError !== "undefined";
 
             scope.disableCreateLineup = () => {
                 if (scope.badTimes) {
@@ -280,17 +263,12 @@ export default function ($timeout, dizquetv, getShowData) {
                 return false;
             };
 
-            scope.hideCreateLineup = () => {
-                return scope.disableCreateLineup() && scope.schedule.slots.length == 0 && scope.hadBackup;
-            };
+            scope.hideCreateLineup = () =>
+                scope.disableCreateLineup() && scope.schedule.slots.length == 0 && scope.hadBackup;
 
-            scope.showResetSlots = () => {
-                return scope.hideCreateLineup();
-            };
+            scope.showResetSlots = () => scope.hideCreateLineup();
 
-            scope.canShowSlot = (slot) => {
-                return slot.showId != "flex." && !slot.showId.startsWith("redirect.");
-            };
+            scope.canShowSlot = (slot) => slot.showId != "flex." && !slot.showId.startsWith("redirect.");
 
             scope.refreshSlots = () => {
                 let sum = 0;
@@ -329,10 +307,9 @@ export default function ($timeout, dizquetv, getShowData) {
         const d = getShowData(program);
         if (!d.hasShow) {
             return null;
-        } else {
-            d.description = d.showDisplayName;
-            d.id = d.showId;
-            return d;
         }
+        d.description = d.showDisplayName;
+        d.id = d.showId;
+        return d;
     }
-}
+};

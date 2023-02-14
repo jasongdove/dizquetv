@@ -1,10 +1,14 @@
-import XMLWriter from "xml-writer";
-import { createWriteStream } from "fs";
+"use strict";
+
+const XMLWriter = require("xml-writer");
+const fs = require("fs");
+
+module.exports = { WriteXMLTV, shutdown };
 
 let isShutdown = false;
 let isWorking = false;
 
-export async function WriteXMLTV(json, xmlSettings, throttle, cacheImageService) {
+async function WriteXMLTV(json, xmlSettings, throttle, cacheImageService) {
     if (isShutdown) {
         return;
     }
@@ -23,7 +27,7 @@ export async function WriteXMLTV(json, xmlSettings, throttle, cacheImageService)
 
 function writePromise(json, xmlSettings, throttle, cacheImageService) {
     return new Promise((resolve, reject) => {
-        const ws = createWriteStream(xmlSettings.file);
+        const ws = fs.createWriteStream(xmlSettings.file);
         const xw = new XMLWriter(true, (str, enc) => ws.write(str, enc));
         ws.on("close", () => {
             resolve();
@@ -32,6 +36,7 @@ function writePromise(json, xmlSettings, throttle, cacheImageService) {
             reject(err);
         });
         _writeDocStart(xw);
+
         async function middle() {
             const channelNumbers = [];
             Object.keys(json).forEach((key, index) => channelNumbers.push(key));
@@ -49,6 +54,7 @@ function writePromise(json, xmlSettings, throttle, cacheImageService) {
                 );
             }
         }
+
         middle()
             .then(() => {
                 _writeDocEnd(xw, ws);
@@ -65,6 +71,7 @@ function _writeDocStart(xw) {
     xw.startElement("tv");
     xw.writeAttribute("generator-info-name", "dizquetv");
 }
+
 function _writeDocEnd(xw, ws) {
     xw.endElement();
     xw.endDocument();
@@ -109,7 +116,7 @@ async function _writeProgramme(channel, program, xw, xmlSettings, cacheImageServ
     xw.endElement();
     xw.writeRaw("\n        <previously-shown/>");
 
-    // sub-title
+    //sub-title
     if (typeof program.sub !== "undefined") {
         xw.startElement("sub-title");
         xw.writeAttribute("lang", "en");
@@ -129,7 +136,7 @@ async function _writeProgramme(channel, program, xw, xmlSettings, cacheImageServ
     // Icon
     if (typeof program.icon !== "undefined") {
         xw.startElement("icon");
-        let icon = program.icon;
+        let { icon } = program;
         if (xmlSettings.enableImageCache === true) {
             const imgUrl = cacheImageService.registerImageOnDatabase(icon);
             icon = `{{host}}/cache/images/${imgUrl}`;
@@ -156,16 +163,18 @@ async function _writeProgramme(channel, program, xw, xmlSettings, cacheImageServ
     // End of Programme
     xw.endElement();
 }
+
 function _createXMLTVDate(d) {
     return d.substring(0, 19).replace(/[-T:]/g, "") + " +0000";
 }
+
 function wait(x) {
     return new Promise((resolve) => {
         setTimeout(resolve, x);
     });
 }
 
-export async function shutdown() {
+async function shutdown() {
     isShutdown = true;
     console.log("Shutting down xmltv writer.");
     if (isWorking) {

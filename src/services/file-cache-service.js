@@ -1,5 +1,7 @@
-import { join } from "path";
-import { createWriteStream, readFile, existsSync, unlinkSync } from "fs";
+"use strict";
+
+const path = require("path");
+const fs = require("fs");
 
 /**
  * Store files in cache
@@ -17,13 +19,13 @@ class FileCacheService {
      *
      * @param {string} fullFilePath
      * @param {*} data
-     * @return {promise}
+     * @returns {promise}
      * @memberof CacheService
      */
     setCache(fullFilePath, data) {
         return new Promise((resolve, reject) => {
             try {
-                const file = createWriteStream(join(this.cachePath, fullFilePath));
+                const file = fs.createWriteStream(path.join(this.cachePath, fullFilePath));
                 file.write(data, (err) => {
                     if (err) {
                         throw Error("Can't save file: ", err);
@@ -42,7 +44,7 @@ class FileCacheService {
      * `get` a File from cache folder
      *
      * @param {string} fullFilePath
-     * @return {promise} `Resolve` with file content, `Reject` with false
+     * @returns {promise} `Resolve` with file content, `Reject` with false
      * @memberof CacheService
      */
     getCache(fullFilePath) {
@@ -51,7 +53,7 @@ class FileCacheService {
                 if (fullFilePath in this.cache) {
                     resolve(this.cache[fullFilePath]);
                 } else {
-                    readFile(join(this.cachePath, fullFilePath), "utf8", function (err, data) {
+                    fs.readFile(path.join(this.cachePath, fullFilePath), "utf8", (err, data) => {
                         if (err) {
                             resolve(false);
                         }
@@ -69,17 +71,17 @@ class FileCacheService {
      * `delete` a File from cache folder
      *
      * @param {string} fullFilePath
-     * @return {promise}
+     * @returns {promise}
      * @memberof CacheService
      */
     deleteCache(fullFilePath) {
         return new Promise((resolve, reject) => {
             try {
-                const thePath = join(this.cachePath, fullFilePath);
-                if (!existsSync(thePath)) {
+                const thePath = path.join(this.cachePath, fullFilePath);
+                if (!fs.existsSync(thePath)) {
                     return resolve(true);
                 }
-                unlinkSync(thePath, (err) => {
+                fs.unlinkSync(thePath, (err) => {
                     if (err) {
                         throw Error("Can't save file: ", err);
                     } else {
@@ -94,4 +96,4 @@ class FileCacheService {
     }
 }
 
-export default FileCacheService;
+module.exports = FileCacheService;

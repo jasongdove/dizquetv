@@ -1,4 +1,6 @@
-/** ****************
+"use strict";
+
+/******************
  * Offline player is for special screens, like the error
  * screen or the Flex Fallback screen.
  *
@@ -6,8 +8,8 @@
  * Asynchronous call to return a stream. Then the stream
  * can be used to play the program.
  **/
-import EventEmitter from "events";
-import FFMPEG from "./ffmpeg.js";
+const EventEmitter = require("events");
+const FFMPEG = require("./ffmpeg");
 
 class OfflinePlayer {
     constructor(error, context) {
@@ -34,8 +36,8 @@ class OfflinePlayer {
     async play(outStream) {
         try {
             const emitter = new EventEmitter();
-            let ffmpeg = this.ffmpeg;
-            const lineupItem = this.context.lineupItem;
+            let { ffmpeg } = this;
+            const { lineupItem } = this.context;
             const duration = lineupItem.streamDuration - lineupItem.start;
             let ff;
             if (this.error) {
@@ -52,7 +54,7 @@ class OfflinePlayer {
                 emitter.emit("close");
             });
             ffmpeg.on("error", async (err) => {
-                // wish this code wasn't repeated.
+                //wish this code wasn't repeated.
                 if (!this.error) {
                     console.log("Replacing failed stream with error stream");
                     ff.unpipe(outStream);
@@ -89,4 +91,4 @@ class OfflinePlayer {
     }
 }
 
-export default OfflinePlayer;
+module.exports = OfflinePlayer;

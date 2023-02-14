@@ -1,4 +1,6 @@
-export default function ($timeout) {
+"use strict";
+
+module.exports = function ($timeout) {
     return {
         restrict: "E",
         templateUrl: "templates/program-config.html",
@@ -8,7 +10,7 @@ export default function ($timeout) {
             visible: "=visible",
             onDone: "=onDone",
         },
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             scope.finished = (prog) => {
                 if (prog.title === "") scope.error = { title: "You must set a program title." };
                 else if (prog.type === "episode" && prog.showTitle == "")
@@ -34,4 +36,4 @@ export default function ($timeout) {
             };
         },
     };
-}
+};

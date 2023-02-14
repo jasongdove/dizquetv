@@ -1,7 +1,9 @@
-import { spawn } from "child_process";
-import { EventEmitter } from "events";
+"use strict";
 
-class FFMPEG_TEXT extends EventEmitter {
+const { spawn } = require("child_process");
+const events = require("events");
+
+class FFMPEG_TEXT extends events.EventEmitter {
     constructor(opts, title, subtitle) {
         super();
         this.args = [
@@ -45,7 +47,7 @@ class FFMPEG_TEXT extends EventEmitter {
             if (code === null) this.emit("close", code);
             else if (code === 0) this.emit("close", code);
             else if (code === 255) this.emit("close", code);
-            else this.emit("error", { code: code, cmd: `${opts.ffmpegPath} ${this.args.join(" ")}` });
+            else this.emit("error", { code, cmd: `${opts.ffmpegPath} ${this.args.join(" ")}` });
         });
     }
     kill() {
@@ -53,4 +55,4 @@ class FFMPEG_TEXT extends EventEmitter {
     }
 }
 
-export default FFMPEG_TEXT;
+module.exports = FFMPEG_TEXT;

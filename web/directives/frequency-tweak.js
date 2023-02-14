@@ -1,4 +1,6 @@
-export default function ($timeout) {
+"use strict";
+
+module.exports = function ($timeout) {
     return {
         restrict: "E",
         templateUrl: "templates/frequency-tweak.html",
@@ -10,7 +12,7 @@ export default function ($timeout) {
             modified: "=modified",
             message: "=message",
         },
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             scope.setModified = () => {
                 scope.modified = true;
             };
@@ -21,4 +23,4 @@ export default function ($timeout) {
             };
         },
     };
-}
+};

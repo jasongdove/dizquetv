@@ -1,10 +1,12 @@
-export default function ($timeout) {
+"use strict";
+
+module.exports = function ($timeout) {
     return {
         restrict: "E",
         templateUrl: "templates/toast-notifications.html",
         replace: true,
         scope: {},
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             const FADE_IN_START = 100;
             const FADE_IN_END = 1000;
             const FADE_OUT_START = 10000;
@@ -74,9 +76,7 @@ export default function ($timeout) {
                 $timeout(() => updateAfter(0));
             };
 
-            const getDeco = (data) => {
-                return "bg-" + data.level;
-            };
+            const getDeco = (data) => "bg-" + data.level;
 
             scope.setup = () => {
                 if (eventSource != null) {
@@ -91,15 +91,13 @@ export default function ($timeout) {
                     setResetTimer();
                 });
 
-                const normalEvent = (title) => {
-                    return (event) => {
-                        const data = JSON.parse(event.data);
-                        addToast({
-                            title: title,
-                            text: data.message,
-                            deco: getDeco(data),
-                        });
-                    };
+                const normalEvent = (title) => (event) => {
+                    const data = JSON.parse(event.data);
+                    addToast({
+                        title,
+                        text: data.message,
+                        deco: getDeco(data),
+                    });
                 };
 
                 eventSource.addEventListener("settings-update", normalEvent("Settings Update"));
@@ -114,4 +112,4 @@ export default function ($timeout) {
             scope.setup();
         },
     };
-}
+};

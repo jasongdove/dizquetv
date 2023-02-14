@@ -1,8 +1,13 @@
-import { SLACK as _SLACK } from "../constants.js";
+"use strict";
 
-const SLACK = _SLACK;
+const constants = require("../constants");
+
+const { SLACK } = constants;
 
 class OnDemandService {
+    /****
+     *
+     **/
     constructor(channelService) {
         this.channelService = channelService;
         this.channelService.setOnDemandService(this);
@@ -30,7 +35,7 @@ class OnDemandService {
             }
 
             if (typeof channel.onDemand !== "undefined" && channel.onDemand.isOnDemand && !channel.onDemand.paused) {
-                // pause the channel
+                //pause the channel
                 channel = this.pauseOnDemandChannel(channel, stopTime);
                 if (waitForSave) {
                     await this.updateChannelSync(channel);
@@ -49,7 +54,7 @@ class OnDemandService {
         // first find what the heck is playing
         const t = stopTime;
         const s = new Date(channel.startTime).getTime();
-        const onDemand = channel.onDemand;
+        const { onDemand } = channel;
         onDemand.paused = true;
         if (channel.programs.length == 0) {
             console.log("On-demand channel has no programs. That doesn't really make a lot of sense...");
@@ -134,9 +139,9 @@ class OnDemandService {
     resumeOnDemandChannel(t, originalChannel) {
         const channel = clone(originalChannel);
         console.log("Resume on-demand channel: " + channel.name);
-        const programs = channel.programs;
-        const onDemand = channel.onDemand;
-        onDemand.paused = false; // should be the invariant
+        const { programs } = channel;
+        const { onDemand } = channel;
+        onDemand.paused = false; //should be the invariant
         if (programs.length == 0) {
             console.log("On-demand channel is empty. This doesn't make a lot of sense...");
             return channel;
@@ -147,7 +152,7 @@ class OnDemandService {
         while (i < programs.length) {
             const program = programs[i];
             if (program.isOffline && program.type !== "redirect") {
-                // skip flex
+                //skip flex
                 i++;
                 onDemand.playedOffset = 0;
                 onDemand.firstProgramModulo = (onDemand.firstProgramModulo + program.duration) % onDemand.modulo;
@@ -183,9 +188,9 @@ class OnDemandService {
             startTime += pm - tm;
         } else {
             const o = tm - pm;
-            startTime = startTime - o;
-            // It looks like it is convenient to make the on-demand a bit more lenient SLACK-wise tha
-            // other parts of the schedule process. So SLACK*2 instead of just SLACK
+            startTime -= o;
+            //It looks like it is convenient to make the on-demand a bit more lenient SLACK-wise tha
+            //other parts of the schedule process. So SLACK*2 instead of just SLACK
             if (o >= SLACK * 2) {
                 startTime += onDemand.modulo;
             }
@@ -203,8 +208,9 @@ class OnDemandService {
         );
     }
 }
+
 function clone(channel) {
     return JSON.parse(JSON.stringify(channel));
 }
 
-export default OnDemandService;
+module.exports = OnDemandService;

@@ -1,14 +1,16 @@
-/** ****************
+"use strict";
+
+/******************
  * This module has to follow the program-player contract.
  * Async call to get a stream.
  * * If connection to plex or the file entry fails completely before playing
  *   it rejects the promise and the error is an Error() class.
- * * Otherwise it returns a stream.
+ * * Otherwise, it returns a stream.
  **/
-import PlexTranscoder from "./plexTranscoder.js";
-import EventEmitter from "events";
-import FFMPEG from "./ffmpeg.js";
-import { SLACK } from "./constants.js";
+const PlexTranscoder = require("./plexTranscoder");
+const EventEmitter = require("events");
+const FFMPEG = require("./ffmpeg");
+const constants = require("./constants");
 
 const USED_CLIENTS = {};
 
@@ -41,10 +43,10 @@ class PlexPlayer {
     }
 
     async play(outStream) {
-        const lineupItem = this.context.lineupItem;
-        const ffmpegSettings = this.context.ffmpegSettings;
-        const db = this.context.db;
-        const channel = this.context.channel;
+        const { lineupItem } = this.context;
+        const { ffmpegSettings } = this.context;
+        const { db } = this.context;
+        const { channel } = this.context;
         let server = db["plex-servers"].find({ name: lineupItem.serverKey });
         if (server.length == 0) {
             throw Error(`Unable to find server "${lineupItem.serverKey}" specified by program.`);
@@ -58,31 +60,31 @@ class PlexPlayer {
             const plexSettings = db["plex-settings"].find()[0];
             const plexTranscoder = new PlexTranscoder(this.clientId, server, plexSettings, channel, lineupItem);
             this.plexTranscoder = plexTranscoder;
-            const watermark = this.context.watermark;
+            const { watermark } = this.context;
             let ffmpeg = new FFMPEG(ffmpegSettings, channel); // Set the transcoder options
             ffmpeg.setAudioOnly(this.context.audioOnly);
             this.ffmpeg = ffmpeg;
             let streamDuration;
             if (typeof lineupItem.streamDuration !== "undefined") {
-                if (lineupItem.start + lineupItem.streamDuration + SLACK < lineupItem.duration) {
+                if (lineupItem.start + lineupItem.streamDuration + constants.SLACK < lineupItem.duration) {
                     streamDuration = lineupItem.streamDuration / 1000;
                 }
             }
-            const deinterlace = ffmpegSettings.enableFFMPEGTranscoding; // for now it will always deinterlace when transcoding is enabled but this is sub-optimal
+            const deinterlace = ffmpegSettings.enableFFMPEGTranscoding; //for now it will always deinterlace when transcoding is enabled but this is sub-optimal
 
             const stream = await plexTranscoder.getStream(deinterlace);
             if (this.killed) {
                 return;
             }
 
-            // let streamStart = (stream.directPlay) ? plexTranscoder.currTimeS : undefined;
-            // let streamStart = (stream.directPlay) ? plexTranscoder.currTimeS : lineupItem.start;
+            //let streamStart = (stream.directPlay) ? plexTranscoder.currTimeS : undefined;
+            //let streamStart = (stream.directPlay) ? plexTranscoder.currTimeS : lineupItem.start;
             const streamStart = stream.directPlay ? plexTranscoder.currTimeS : undefined;
-            const streamStats = stream.streamStats;
+            const { streamStats } = stream;
             streamStats.duration = lineupItem.streamDuration;
 
             const emitter = new EventEmitter();
-            // setTimeout( () => {
+            //setTimeout( () => {
             let ff = await ffmpeg.spawnStream(
                 stream.streamUrl,
                 stream.streamStats,
@@ -92,7 +94,7 @@ class PlexPlayer {
                 lineupItem.type,
             ); // Spawn the ffmpeg process
             ff.pipe(outStream, { end: false });
-            // }, 100);
+            //}, 100);
             plexTranscoder.startUpdatingPlex();
 
             ffmpeg.on("end", () => {
@@ -132,4 +134,4 @@ class PlexPlayer {
     }
 }
 
-export default PlexPlayer;
+module.exports = PlexPlayer;

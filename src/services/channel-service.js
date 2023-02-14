@@ -1,13 +1,9 @@
-import { EventEmitter } from "events";
-import {
-    saveChannelConfig,
-    clear,
-    getChannelConfig,
-    getAllNumbers,
-    getAllChannels as _getAllChannels,
-} from "../channel-cache.js";
+"use strict";
 
-class ChannelService extends EventEmitter {
+const events = require("events");
+const channelCache = require("../channel-cache");
+
+class ChannelService extends events.EventEmitter {
     constructor(channelDB) {
         super();
         this.channelDB = channelDB;
@@ -25,21 +21,21 @@ class ChannelService extends EventEmitter {
             ignoreOnDemand = false;
             this.onDemandService.fixupChannelBeforeSave(channel);
         }
-        saveChannelConfig(number, channel);
-        await channelDB.saveChannel(number, channel);
+        channelCache.saveChannelConfig(number, channel);
+        await this.channelDB.saveChannel(number, channel);
 
-        this.emit("channel-update", { channelNumber: number, channel: channel, ignoreOnDemand: ignoreOnDemand });
+        this.emit("channel-update", { channelNumber: number, channel, ignoreOnDemand });
     }
 
     async deleteChannel(number) {
-        await channelDB.deleteChannel(number);
+        await this.channelDB.deleteChannel(number);
         this.emit("channel-update", { channelNumber: number, channel: null });
 
-        clear();
+        channelCache.clear();
     }
 
     async getChannel(number) {
-        const lis = await getChannelConfig(this.channelDB, number);
+        const lis = await channelCache.getChannelConfig(this.channelDB, number);
         if (lis == null || lis.length !== 1) {
             return null;
         }
@@ -47,11 +43,11 @@ class ChannelService extends EventEmitter {
     }
 
     async getAllChannelNumbers() {
-        return await getAllNumbers(this.channelDB);
+        return await channelCache.getAllNumbers(this.channelDB);
     }
 
     async getAllChannels() {
-        return await _getAllChannels(this.channelDB);
+        return await channelCache.getAllChannels(this.channelDB);
     }
 }
 
@@ -91,4 +87,4 @@ function cleanUpChannel(channel) {
     return channel;
 }
 
-export default ChannelService;
+module.exports = ChannelService;

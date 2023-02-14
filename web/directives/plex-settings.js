@@ -1,10 +1,12 @@
-export default function (plex, dizquetv, $timeout) {
+"use strict";
+
+module.exports = function (plex, dizquetv, $timeout) {
     return {
         restrict: "E",
         templateUrl: "templates/plex-settings.html",
         replace: true,
         scope: {},
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             scope.requestId = 0;
             scope._serverToEdit = null;
             scope._serverEditorState = {
@@ -97,8 +99,8 @@ export default function (plex, dizquetv, $timeout) {
                 scope.$apply();
             };
 
-            scope.findGoodConnection = async (server, connections) => {
-                return await Promise.any(
+            scope.findGoodConnection = async (server, connections) =>
+                await Promise.any(
                     connections.map(async (connection) => {
                         const hypothethical = {
                             name: server.name,
@@ -117,19 +119,16 @@ export default function (plex, dizquetv, $timeout) {
                                 const s2 = (await dizquetv.checkNewPlexServer(hypothethical)).status;
                                 if (s1 == 1 && s2 == 1) {
                                     return 1;
-                                } else {
-                                    return -1;
                                 }
+                                return -1;
                             })(),
                         ]);
                         if (q === 1) {
                             return hypothethical;
-                        } else {
-                            throw Error("Not proper status");
                         }
+                        throw Error("Not proper status");
                     }),
                 );
-            };
 
             scope.getLocalConnections = (connections) => {
                 const r = [];
@@ -151,9 +150,8 @@ export default function (plex, dizquetv, $timeout) {
                 return r;
             };
 
-            scope.shouldDisableSubtitles = () => {
-                return scope.settings && (scope.settings.forceDirectPlay || scope.settings.streamPath === "direct");
-            };
+            scope.shouldDisableSubtitles = () =>
+                scope.settings && (scope.settings.forceDirectPlay || scope.settings.streamPath === "direct");
 
             scope.addPlexServer = async () => {
                 scope.isProcessing = true;
@@ -180,7 +178,7 @@ export default function (plex, dizquetv, $timeout) {
                                 }
                             }
                             if (connection == null) {
-                                // pick a random one, really.
+                                //pick a random one, really.
                                 connections = scope.getLocalConnections(server.connections);
                                 if (connections.length > 0) {
                                     connection = connections[0];
@@ -223,12 +221,8 @@ export default function (plex, dizquetv, $timeout) {
                 { id: "plex", description: "Plex" },
                 { id: "direct", description: "Direct" },
             ];
-            scope.hideIfNotPlexPath = () => {
-                return scope.settings && scope.settings.streamPath != "plex";
-            };
-            scope.hideIfNotDirectPath = () => {
-                return scope.settings && scope.settings.streamPath != "direct";
-            };
+            scope.hideIfNotPlexPath = () => scope.settings && scope.settings.streamPath != "plex";
+            scope.hideIfNotDirectPath = () => scope.settings && scope.settings.streamPath != "direct";
             scope.maxAudioChannelsOptions = [
                 { id: "1", description: "1.0" },
                 { id: "2", description: "2.0" },
@@ -261,4 +255,4 @@ export default function (plex, dizquetv, $timeout) {
             ];
         },
     };
-}
+};

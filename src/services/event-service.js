@@ -1,6 +1,8 @@
-import EventEmitter from "events";
+"use strict";
 
-export default class EventsService {
+const EventEmitter = require("events");
+
+class EventsService {
     constructor() {
         this.stream = new EventEmitter();
         const that = this;
@@ -20,7 +22,7 @@ export default class EventsService {
                 "connection": "keep-alive",
             });
             const listener = (event, data) => {
-                // console.log( String(event) + " " + JSON.stringify(data) );
+                //console.log( String(event) + " " + JSON.stringify(data) );
                 response.write("event: " + String(event) + "\ndata: " + JSON.stringify(data) + "\nretry: 5000\n\n");
             };
 
@@ -39,3 +41,5 @@ export default class EventsService {
         this.stream.emit("push", event, data);
     }
 }
+
+module.exports = EventsService;

@@ -1,4 +1,6 @@
-export default function ($scope, dizquetv) {
+"use strict";
+
+module.exports = function ($scope, dizquetv) {
     $scope.channels = [];
     $scope.showChannelConfig = false;
     $scope.selectedChannel = null;
@@ -7,12 +9,10 @@ export default function ($scope, dizquetv) {
     $scope.refreshChannels = async () => {
         $scope.channels = [{ number: 1, pending: true }];
         const channelNumbers = await dizquetv.getChannelNumbers();
-        $scope.channels = channelNumbers.map((x) => {
-            return {
-                number: x,
-                pending: true,
-            };
-        });
+        $scope.channels = channelNumbers.map((x) => ({
+            number: x,
+            pending: true,
+        }));
         $scope.$apply();
         $scope.queryChannels();
     };
@@ -52,7 +52,7 @@ export default function ($scope, dizquetv) {
                 typeof $scope.originalChannelNumber !== "undefined" &&
                 $scope.originalChannelNumber != channel.number
             ) {
-                // update + change channel number.
+                //update + change channel number.
                 $scope.channels[$scope.selectedChannelIndex].pending = true;
                 await dizquetv.updateChannel(channel),
                     await dizquetv.removeChannel({ number: $scope.originalChannelNumber });
@@ -94,4 +94,4 @@ export default function ($scope, dizquetv) {
             $scope.$apply();
         }
     };
-}
+};

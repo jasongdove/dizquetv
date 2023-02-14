@@ -1,8 +1,10 @@
-import { SLACK } from "../constants.js";
-import { getShowData } from "./get-show-data.js";
-import { random } from "../helperFuncs.js";
-import throttle from "./throttle.js";
-import { getShowShuffler, getShowOrderer } from "./show-orderers.js";
+"use strict";
+
+const constants = require("../constants");
+const getShowData = require("./get-show-data")();
+const { random } = require("../helperFuncs");
+const throttle = require("./throttle");
+const orderers = require("./show-orderers");
 
 const MINUTE = 60 * 1000;
 const DAY = 24 * 60 * MINUTE;
@@ -12,11 +14,10 @@ function getShow(program) {
     const d = getShowData(program);
     if (!d.hasShow) {
         return null;
-    } else {
-        d.description = d.showDisplayName;
-        d.id = d.showId;
-        return d;
     }
+    d.description = d.showDisplayName;
+    d.id = d.showId;
+    return d;
 }
 
 function getProgramId(program) {
@@ -33,7 +34,7 @@ function getProgramId(program) {
 
 function addProgramToShow(show, program) {
     if (show.id == "flex." || show.id.startsWith("redirect.")) {
-        // nothing to do
+        //nothing to do
         return;
     }
     const id = getProgramId(program);
@@ -43,14 +44,14 @@ function addProgramToShow(show, program) {
     }
 }
 
-export default async (programs, schedule) => {
+module.exports = async (programs, schedule) => {
     if (!Array.isArray(programs)) {
         return { userError: "Expected a programs array" };
     }
     if (typeof schedule === "undefined") {
         return { userError: "Expected a schedule" };
     }
-    // verify that the schedule is in the correct format
+    //verify that the schedule is in the correct format
     if (!Array.isArray(schedule.slots)) {
         return { userError: 'Expected a "slots" array in schedule' };
     }
@@ -77,7 +78,7 @@ export default async (programs, schedule) => {
     if (typeof schedule.pad === "undefined") {
         return { userError: "Expected schedule.pad" };
     }
-    if (typeof schedule.maxDays == "undefined") {
+    if (typeof schedule.maxDays === "undefined") {
         return { userError: "schedule.maxDays must be defined." };
     }
     if (typeof schedule.flexPreference === "undefined") {
@@ -95,8 +96,8 @@ export default async (programs, schedule) => {
     const shows = [];
 
     function getNextForSlot(slot, remaining) {
-        // remaining doesn't restrict what next show is picked. It is only used
-        // for shows with flexible length (flex and redirects)
+        //remaining doesn't restrict what next show is picked. It is only used
+        //for shows with flexible length (flex and redirects)
         if (slot.showId === "flex.") {
             return {
                 isOffline: true,
@@ -112,9 +113,9 @@ export default async (programs, schedule) => {
                 channel: show.channel,
             };
         } else if (slot.order === "shuffle") {
-            return getShowShuffler(show).current();
+            return orderers.getShowShuffler(show).current();
         } else if (slot.order === "next") {
-            return getShowOrderer(show).current();
+            return orderers.getShowOrderer(show).current();
         }
     }
 
@@ -124,9 +125,9 @@ export default async (programs, schedule) => {
         }
         const show = shows[showsById[slot.showId]];
         if (slot.order === "shuffle") {
-            return getShowShuffler(show).next();
+            return orderers.getShowShuffler(show).next();
         } else if (slot.order === "next") {
-            return getShowOrderer(show).next();
+            return orderers.getShowOrderer(show).next();
         }
     }
 
@@ -138,11 +139,11 @@ export default async (programs, schedule) => {
         const x = item.duration;
         const m = x % padOption;
         let f = 0;
-        if (m > SLACK && padOption - m > SLACK) {
+        if (m > constants.SLACK && padOption - m > constants.SLACK) {
             f = padOption - m;
         }
         return {
-            item: item,
+            item,
             pad: f,
             totalDuration: item.duration + f,
         };
@@ -201,9 +202,9 @@ export default async (programs, schedule) => {
 
     while (t < hardLimit && p.length < LIMIT) {
         await throttle();
-        // ensure t is padded
+        //ensure t is padded
         const m = t % schedule.pad;
-        if (t % schedule.pad > SLACK && schedule.pad - m > SLACK) {
+        if (t % schedule.pad > constants.SLACK && schedule.pad - m > constants.SLACK) {
             pushFlex(schedule.pad - m);
             continue;
         }
@@ -218,7 +219,7 @@ export default async (programs, schedule) => {
             if (typeof slotLastPlayed[i] !== undefined) {
                 const lastt = slotLastPlayed[i];
                 minNextTime = Math.min(minNextTime, lastt + s[i].cooldown);
-                if (t - lastt < s[i].cooldown - SLACK) {
+                if (t - lastt < s[i].cooldown - constants.SLACK) {
                     continue;
                 }
             }
@@ -230,14 +231,14 @@ export default async (programs, schedule) => {
             }
         }
         if (slot == null) {
-            // Nothing to play, likely due to cooldown
+            //Nothing to play, likely due to cooldown
             pushFlex(minNextTime - t);
             continue;
         }
         const item = getNextForSlot(slot, remaining);
 
         if (item.isOffline) {
-            // flex or redirect. We can just use the whole duration
+            //flex or redirect. We can just use the whole duration
             item.duration = remaining;
             pushProgram(item);
             slotLastPlayed[slotIndex] = t;
@@ -268,7 +269,7 @@ export default async (programs, schedule) => {
         }
         const temt = t + total;
         let rem = 0;
-        if (temt % schedule.pad >= SLACK && temt % schedule.pad < schedule.pad - SLACK) {
+        if (temt % schedule.pad >= constants.SLACK && temt % schedule.pad < schedule.pad - constants.SLACK) {
             rem = schedule.pad - (temt % schedule.pad);
         }
 
@@ -279,15 +280,11 @@ export default async (programs, schedule) => {
             pads[pads.length - 1].pad += mod;
             pads[pads.length - 1].totalDuration += mod;
 
-            const sortedPads = pads.map((p, $index) => {
-                return {
-                    pad: p.pad,
-                    index: $index,
-                };
-            });
-            sortedPads.sort((a, b) => {
-                return a.pad - b.pad;
-            });
+            const sortedPads = pads.map((p, $index) => ({
+                pad: p.pad,
+                index: $index,
+            }));
+            sortedPads.sort((a, b) => a.pad - b.pad);
             for (let i = 0; i < pads.length; i++) {
                 let q = Math.floor(div / pads.length);
                 if (i < div % pads.length) {
@@ -297,7 +294,7 @@ export default async (programs, schedule) => {
                 pads[j].pad += q * schedule.pad;
             }
         } else if (flexBetween) {
-            // just distribute it equitatively
+            //just distribute it equitatively
             const div = Math.floor(rem / pads.length);
             let totalAdded = 0;
             for (let i = 0; i < pads.length; i++) {
@@ -306,7 +303,7 @@ export default async (programs, schedule) => {
             }
             pads[0].pad += rem - totalAdded;
         } else {
-            // also add div to the latest item
+            //also add div to the latest item
             pads[pads.length - 1].pad += rem;
             pads[pads.length - 1].totalDuration += rem;
         }
@@ -322,7 +319,7 @@ export default async (programs, schedule) => {
     }
     const m = (t - t0) % schedule.period;
     if (m != 0) {
-        // ensure the schedule is a multiple of period
+        //ensure the schedule is a multiple of period
         pushFlex(schedule.period - m);
     }
 

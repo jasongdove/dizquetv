@@ -1,11 +1,13 @@
-export default function (dizquetv, resolutionOptions) {
+"use strict";
+
+module.exports = function (dizquetv, resolutionOptions) {
     return {
         restrict: "E",
         templateUrl: "templates/ffmpeg-settings.html",
         replace: true,
         scope: {},
-        link: function (scope, element, attrs) {
-            // add validations to ffmpeg settings, speciall commas in codec name
+        link(scope, element, attrs) {
+            //add validations to ffmpeg settings, speciall commas in codec name
             dizquetv.getFfmpegSettings().then((settings) => {
                 scope.settings = settings;
             });
@@ -19,12 +21,9 @@ export default function (dizquetv, resolutionOptions) {
                     scope.settings = _settings;
                 });
             };
-            scope.isTranscodingNotNeeded = () => {
-                return typeof scope.settings === "undefined" || !scope.settings.enableFFMPEGTranscoding;
-            };
-            scope.hideIfNotAutoPlay = () => {
-                return scope.settings.enableAutoPlay != true;
-            };
+            scope.isTranscodingNotNeeded = () =>
+                typeof scope.settings === "undefined" || !scope.settings.enableFFMPEGTranscoding;
+            scope.hideIfNotAutoPlay = () => scope.settings.enableAutoPlay != true;
             scope.resolutionOptions = resolutionOptions.get();
             scope.muxDelayOptions = [
                 { id: "0", description: "0 Seconds" },
@@ -75,4 +74,4 @@ export default function (dizquetv, resolutionOptions) {
             ];
         },
     };
-}
+};

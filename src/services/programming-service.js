@@ -1,7 +1,9 @@
-import { getCurrentProgramAndTimeElapsed as _getCurrentProgramAndTimeElapsed } from "../helperFuncs.js";
+"use strict";
+
+const helperFuncs = require("../helperFuncs");
 
 /* Tells us what is or should be playing in some channel
-   If the channel is a an on-demand channel and is paused, resume the channel.
+   If the channel is an on-demand channel and is paused, resume the channel.
    Before running the logic.
 
    This hub for the programming logic used to be helperFuncs.getCurrentProgramAndTimeElapsed.
@@ -14,14 +16,17 @@ import { getCurrentProgramAndTimeElapsed as _getCurrentProgramAndTimeElapsed } f
 */
 
 class ProgrammingService {
+    /****
+     *
+     **/
     constructor(onDemandService) {
         this.onDemandService = onDemandService;
     }
 
     getCurrentProgramAndTimeElapsed(moment, channel) {
         channel = this.onDemandService.activateChannelIfNeeded(moment, channel);
-        return _getCurrentProgramAndTimeElapsed(moment, channel);
+        return helperFuncs.getCurrentProgramAndTimeElapsed(moment, channel);
     }
 }
 
-export default ProgrammingService;
+module.exports = ProgrammingService;

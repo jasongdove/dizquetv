@@ -1,10 +1,12 @@
-export default function (dizquetv, $timeout) {
+"use strict";
+
+module.exports = function (dizquetv, $timeout) {
     return {
         restrict: "E",
         templateUrl: "templates/hdhr-settings.html",
         replace: true,
         scope: {},
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             dizquetv.getHdhrSettings().then((settings) => {
                 scope.settings = settings;
             });
@@ -29,4 +31,4 @@ export default function (dizquetv, $timeout) {
             };
         },
     };
-}
+};

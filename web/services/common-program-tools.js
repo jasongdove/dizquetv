@@ -1,11 +1,13 @@
-// This is an exact copy of the file with the same now in the nodejs
-// one of these days, we'll figure out how to share the code.
-export default function (getShowData) {
-    /** * Input: list of programs
+"use strict";
+
+//This is an exact copy of the file with the same now in the nodejs
+//one of these days, we'll figure out how to share the code.
+module.exports = function (getShowData) {
+    /*** Input: list of programs
      * output: sorted list of programs */
     function sortShows(programs) {
         const shows = {};
-        const movies = []; // not exactly accurate name
+        const movies = []; //not exactly accurate name
         let newProgs = [];
         const progs = programs;
         for (let i = 0, l = progs.length; i < l; i++) {
@@ -33,9 +35,8 @@ export default function (getShowData) {
                 return 0;
             } else if (a.title < b.title) {
                 return -1;
-            } else {
-                return 1;
             }
+            return 1;
         });
         return newProgs.concat(movies);
     }
@@ -121,28 +122,26 @@ export default function (getShowData) {
                 return -1;
             } else if (a.date > b.date) {
                 return 1;
-            } else {
-                const aHasSeason = typeof a.season !== "undefined";
-                const bHasSeason = typeof b.season !== "undefined";
-                if (!aHasSeason && !bHasSeason) {
-                    return 0;
-                } else if (!aHasSeason) {
-                    return 1;
-                } else if (!bHasSeason) {
-                    return -1;
-                }
-                if (a.season < b.season) {
-                    return -1;
-                } else if (a.season > b.season) {
-                    return 1;
-                } else if (a.episode < b.episode) {
-                    return -1;
-                } else if (a.episode > b.episode) {
-                    return 1;
-                } else {
-                    return 0;
-                }
             }
+            const aHasSeason = typeof a.season !== "undefined";
+            const bHasSeason = typeof b.season !== "undefined";
+            if (!aHasSeason && !bHasSeason) {
+                return 0;
+            } else if (!aHasSeason) {
+                return 1;
+            } else if (!bHasSeason) {
+                return -1;
+            }
+            if (a.season < b.season) {
+                return -1;
+            } else if (a.season > b.season) {
+                return 1;
+            } else if (a.episode < b.episode) {
+                return -1;
+            } else if (a.episode > b.episode) {
+                return 1;
+            }
+            return 0;
         });
         return programs;
     };
@@ -164,8 +163,8 @@ export default function (getShowData) {
                 angle = 0;
                 w = 4 + (program.channel % 10);
                 const c = program.channel * 100019;
-                // r = 255, g = 0, b = 0;
-                // r2 = 0, g2 = 0, b2 = 255;
+                //r = 255, g = 0, b = 0;
+                //r2 = 0, g2 = 0, b2 = 255;
 
                 r = (c & 3) * 77;
                 g = ((c >> 1) & 3) * 77;
@@ -235,17 +234,17 @@ export default function (getShowData) {
         const f = interpolate;
         const w = 15.0;
         const t = 4 * 60 * 60 * 1000;
-        // let d = Math.log( Math.min(t, program.duration) ) / Math.log(2);
-        // let a = (d * Math.log(2) ) / Math.log(t);
+        //let d = Math.log( Math.min(t, program.duration) ) / Math.log(2);
+        //let a = (d * Math.log(2) ) / Math.log(t);
         let a = (f(program.duration) * w) / f(t);
         a = Math.min(w, Math.max(0.3, a));
-        b = w - a + 0.01;
+        const b = w - a + 0.01;
 
         return {
             "width": `${a}%`,
             "height": "1.3em",
             "margin-right": `${b}%`,
-            "background": background,
+            background,
             "border": "1px solid black",
             "margin-top": "0.01em",
             "margin-bottom": "1px",
@@ -262,14 +261,14 @@ export default function (getShowData) {
         }
         for (let i = st; i != e; i += inc) {
             hash = s.charCodeAt(i) + ((hash << 5) - hash);
-            hash = hash & hash; // Convert to 32bit integer
+            hash &= hash; // Convert to 32bit integer
         }
         return hash;
     };
 
     const interpolate = (() => {
         const h = 60 * 60 * 1000;
-        const ix = [0, 1 * h, 2 * h, 4 * h, 8 * h, 24 * h];
+        const ix = [0, Number(h), 2 * h, 4 * h, 8 * h, 24 * h];
         const iy = [0, 1.0, 1.25, 1.5, 1.75, 2.0];
         const n = ix.length;
 
@@ -283,12 +282,12 @@ export default function (getShowData) {
     })();
 
     return {
-        sortShows: sortShows,
-        shuffle: shuffle,
-        removeDuplicates: removeDuplicates,
-        removeSpecials: removeSpecials,
-        sortByDate: sortByDate,
-        getProgramDisplayTitle: getProgramDisplayTitle,
-        programSquareStyle: programSquareStyle,
+        sortShows,
+        shuffle,
+        removeDuplicates,
+        removeSpecials,
+        sortByDate,
+        getProgramDisplayTitle,
+        programSquareStyle,
     };
-}
+};

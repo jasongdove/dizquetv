@@ -1,9 +1,16 @@
-import { random } from "../helperFuncs.js";
-import { getShowData } from "./get-show-data.js";
-import { Random as _Random, MersenneTwister19937 } from "random-js";
-const Random = _Random;
+"use strict";
 
-// Code shared by random slots and time slots for keeping track of the order of episodes
+const { random } = require("../helperFuncs");
+const getShowData = require("./get-show-data")();
+const randomJS = require("random-js");
+const { Random } = randomJS;
+
+/****
+ *
+ *  Code shared by random slots and time slots for keeping track of the order
+ * of episodes
+ *
+ **/
 function shuffle(array, lo, hi, randomOverride) {
     let r = randomOverride;
     if (typeof r === "undefined") {
@@ -26,7 +33,7 @@ function shuffle(array, lo, hi, randomOverride) {
     return array;
 }
 
-export function getShowOrderer(show) {
+function getShowOrderer(show) {
     if (typeof show.orderer === "undefined") {
         const sortedPrograms = JSON.parse(JSON.stringify(show.programs));
         sortedPrograms.sort((a, b) => {
@@ -44,9 +51,7 @@ export function getShowOrderer(show) {
         }
 
         show.orderer = {
-            current: () => {
-                return sortedPrograms[position];
-            },
+            current: () => sortedPrograms[position],
 
             next: () => {
                 position = (position + 1) % sortedPrograms.length;
@@ -56,7 +61,7 @@ export function getShowOrderer(show) {
     return show.orderer;
 }
 
-export function getShowShuffler(show) {
+function getShowShuffler(show) {
     if (typeof show.shuffler === "undefined") {
         if (typeof show.programs === "undefined") {
             throw Error(show.id + " has no programs?");
@@ -78,7 +83,7 @@ export function getShowShuffler(show) {
             randomPrograms.push({});
         }
 
-        const showId = getShowData(show.programs[0]).showId;
+        const { showId } = getShowData(show.programs[0]);
 
         let position = show.founder.shuffleOrder;
         if (typeof position === "undefined") {
@@ -94,7 +99,7 @@ export function getShowShuffler(show) {
             }
             seed.push(generation);
 
-            localRandom = new Random(MersenneTwister19937.seedWithArray(seed));
+            localRandom = new Random(randomJS.MersenneTwister19937.seedWithArray(seed));
 
             if (generation == 0) {
                 shuffle(splitPrograms, 0, n, localRandom);
@@ -128,3 +133,8 @@ export function getShowShuffler(show) {
     }
     return show.shuffler;
 }
+
+module.exports = {
+    getShowOrderer,
+    getShowShuffler,
+};

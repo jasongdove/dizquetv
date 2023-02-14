@@ -1,6 +1,8 @@
-import { v4 as uuidv4 } from "uuid";
-import axios from "axios";
-import { access, F_OK } from "fs";
+"use strict";
+
+const { v4: uuidv4 } = require("uuid");
+const axios = require("axios");
+const fs = require("fs");
 
 class PlexTranscoder {
     constructor(clientId, server, settings, channel, lineupItem) {
@@ -88,14 +90,14 @@ class PlexTranscoder {
             await this.getDecision(stream.directPlay);
             stream.streamUrl = this.settings.streamPath === "direct" ? this.file : this.plexFile;
             if (this.settings.streamPath === "direct") {
-                access(this.file, F_OK, (err) => {
+                fs.access(this.file, fs.F_OK, (err) => {
                     if (err) {
                         throw Error("Can't access this file", err);
                         return;
                     }
                 });
             }
-            if (typeof stream.streamUrl == "undefined") {
+            if (typeof stream.streamUrl === "undefined") {
                 throw Error(
                     "Direct path playback is not possible for this program because it was registered at a time when the direct path settings were not set. To fix this, you must either revert the direct path setting or rebuild this channel.",
                 );
@@ -108,7 +110,7 @@ class PlexTranscoder {
             await this.getDecision(stream.directPlay);
             stream.streamUrl = `${this.transcodeUrlBase}${this.transcodingArgs}`;
         } else {
-            // This case sounds complex. Apparently plex is sending us just the audio, so we would need to get the video in a separate stream.
+            //This case sounds complex. Apparently plex is sending us just the audio, so we would need to get the video in a separate stream.
             this.log("Decision: Direct stream. Audio is being transcoded");
             stream.separateVideoStream = this.settings.streamPath === "direct" ? this.file : this.plexFile;
             stream.streamUrl = `${this.transcodeUrlBase}${this.transcodingArgs}`;
@@ -140,7 +142,7 @@ class PlexTranscoder {
         const resolutionArr = resolution.split("x");
 
         let vc = this.settings.videoCodecs;
-        // This codec is not currently supported by plex so requesting it to transcode will always
+        //This codec is not currently supported by plex so requesting it to transcode will always
         // cause an error. If Plex ever supports av1, remove this. I guess.
         if (vc != "") {
             vc += ",av1";
@@ -159,16 +161,14 @@ add-limitation(scope=videoCodec&scopeName=*&type=upperBound&name=video.height&va
             clientProfile = `add-transcode-target(type=musicProfile&protocol=${this.settings.streamProtocol}&container=${streamContainer}&audioCodec=${this.settings.audioCodecs}&subtitleCodec=&context=streaming&replace=true)`;
         }
         // Set transcode settings per audio codec
-        this.settings.audioCodecs.split(",").forEach(
-            function (codec) {
-                clientProfile += `+add-transcode-target-audio-codec(type=videoProfile&context=streaming&protocol=${this.settings.streamProtocol}&audioCodec=${codec})`;
-                if (codec == "mp3") {
-                    clientProfile += `+add-limitation(scope=videoAudioCodec&scopeName=${codec}&type=upperBound&name=audio.channels&value=2)`;
-                } else {
-                    clientProfile += `+add-limitation(scope=videoAudioCodec&scopeName=${codec}&type=upperBound&name=audio.channels&value=${this.settings.maxAudioChannels})`;
-                }
-            }.bind(this),
-        );
+        this.settings.audioCodecs.split(",").forEach((codec) => {
+            clientProfile += `+add-transcode-target-audio-codec(type=videoProfile&context=streaming&protocol=${this.settings.streamProtocol}&audioCodec=${codec})`;
+            if (codec == "mp3") {
+                clientProfile += `+add-limitation(scope=videoAudioCodec&scopeName=${codec}&type=upperBound&name=audio.channels&value=2)`;
+            } else {
+                clientProfile += `+add-limitation(scope=videoAudioCodec&scopeName=${codec}&type=upperBound&name=audio.channels&value=${this.settings.maxAudioChannels})`;
+            }
+        });
 
         // deinterlace video if specified, only useful if overlaying channel logo later
         if (deinterlace == true) {
@@ -243,43 +243,41 @@ lang=en`;
         try {
             const streams = this.decisionJson.MediaContainer.Metadata[0].Media[0].Part[0].Stream;
             ret.duration = parseFloat(this.decisionJson.MediaContainer.Metadata[0].Media[0].Part[0].duration);
-            streams.forEach(
-                function (_stream, $index) {
-                    // Video
-                    let stream = _stream;
-                    if (stream["streamType"] == "1") {
-                        if (this.videoIsDirect === true && typeof this.directInfo !== "undefined") {
-                            stream = this.directInfo.MediaContainer.Metadata[0].Media[0].Part[0].Stream[$index];
-                        }
-                        ret.anamorphic = stream.anamorphic === "1" || stream.anamorphic === true;
-                        if (ret.anamorphic) {
-                            const parsed = parsePixelAspectRatio(stream.pixelAspectRatio);
-                            if (isNaN(parsed.p) || isNaN(parsed.q)) {
-                                throw Error("isNaN");
-                            }
-                            ret.pixelP = parsed.p;
-                            ret.pixelQ = parsed.q;
-                        } else {
-                            ret.pixelP = 1;
-                            ret.pixelQ = 1;
-                        }
-                        ret.videoCodec = stream.codec;
-                        ret.videoWidth = stream.width;
-                        ret.videoHeight = stream.height;
-                        ret.videoFramerate = Math.round(stream["frameRate"]);
-                        // Rounding framerate avoids scenarios where
-                        // 29.9999999 & 30 don't match.
-                        ret.videoDecision = typeof stream.decision === "undefined" ? "copy" : stream.decision;
-                        ret.videoScanType = stream.scanType;
+            streams.forEach((_stream, $index) => {
+                // Video
+                let stream = _stream;
+                if (stream.streamType == "1") {
+                    if (this.videoIsDirect === true && typeof this.directInfo !== "undefined") {
+                        stream = this.directInfo.MediaContainer.Metadata[0].Media[0].Part[0].Stream[$index];
                     }
-                    // Audio. Only look at stream being used
-                    if (stream["streamType"] == "2" && stream["selected"] == "1") {
-                        ret.audioChannels = stream["channels"];
-                        ret.audioCodec = stream["codec"];
-                        ret.audioDecision = typeof stream.decision === "undefined" ? "copy" : stream.decision;
+                    ret.anamorphic = stream.anamorphic === "1" || stream.anamorphic === true;
+                    if (ret.anamorphic) {
+                        const parsed = parsePixelAspectRatio(stream.pixelAspectRatio);
+                        if (isNaN(parsed.p) || isNaN(parsed.q)) {
+                            throw Error("isNaN");
+                        }
+                        ret.pixelP = parsed.p;
+                        ret.pixelQ = parsed.q;
+                    } else {
+                        ret.pixelP = 1;
+                        ret.pixelQ = 1;
                     }
-                }.bind(this),
-            );
+                    ret.videoCodec = stream.codec;
+                    ret.videoWidth = stream.width;
+                    ret.videoHeight = stream.height;
+                    ret.videoFramerate = Math.round(stream.frameRate);
+                    // Rounding framerate avoids scenarios where
+                    // 29.9999999 & 30 don't match.
+                    ret.videoDecision = typeof stream.decision === "undefined" ? "copy" : stream.decision;
+                    ret.videoScanType = stream.scanType;
+                }
+                // Audio. Only look at stream being used
+                if (stream.streamType == "2" && stream.selected == "1") {
+                    ret.audioChannels = stream.channels;
+                    ret.audioCodec = stream.codec;
+                    ret.audioDecision = typeof stream.decision === "undefined" ? "copy" : stream.decision;
+                }
+            });
         } catch (e) {
             console.error("Error at decision:", e);
         }
@@ -309,9 +307,9 @@ lang=en`;
                 try {
                     const streams = res.data.MediaContainer.Metadata[0].Media[0].Part[0].Stream;
 
-                    streams.forEach(function (stream) {
+                    streams.forEach((stream) => {
                         // Audio. Only look at stream being used
-                        if (stream["streamType"] == "2" && stream["selected"] == "1") {
+                        if (stream.streamType == "2" && stream.selected == "1") {
                             index = stream.index;
                         }
                     });
@@ -349,7 +347,7 @@ lang=en`;
             return;
         }
 
-        const transcodeDecisionCode = res.data.MediaContainer.transcodeDecisionCode;
+        const { transcodeDecisionCode } = res.data.MediaContainer;
         if (typeof transcodeDecisionCode === "undefined") {
             this.decisionJson.MediaContainer.transcodeDecisionCode = "novideo";
             this.log("Strange case, attempt direct play");
@@ -481,4 +479,4 @@ function getOneOrUndefined(object, field) {
     return x[0];
 }
 
-export default PlexTranscoder;
+module.exports = PlexTranscoder;

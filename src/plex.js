@@ -1,4 +1,7 @@
-import request from "request";
+"use strict";
+
+const request = require("request");
+
 class Plex {
     constructor(opts) {
         this._accessToken = typeof opts.accessToken !== "undefined" ? opts.accessToken : "";
@@ -10,7 +13,7 @@ class Plex {
             }
         }
         this._server = {
-            uri: uri,
+            uri,
             host: typeof opts.host !== "undefined" ? opts.host : "127.0.0.1",
             port: typeof opts.port !== "undefined" ? opts.port : "32400",
             protocol: typeof opts.protocol !== "undefined" ? opts.protocol : "http",
@@ -42,7 +45,7 @@ class Plex {
                 form: {
                     user: {
                         login: username,
-                        password: password,
+                        password,
                     },
                 },
                 jar: false,
@@ -90,6 +93,7 @@ class Plex {
             return JSON.parse(res.body).MediaContainer;
         }
     }
+
     async Put(path, query = {}, optionalHeaders = {}) {
         const req = {
             method: "put",
@@ -112,6 +116,7 @@ class Plex {
                 });
         });
     }
+
     Post(path, query = {}, optionalHeaders = {}) {
         const req = {
             method: "post",
@@ -134,6 +139,7 @@ class Plex {
                 });
         });
     }
+
     async checkServerStatus() {
         try {
             await this.Get("/");
@@ -143,6 +149,7 @@ class Plex {
             return -1;
         }
     }
+
     async GetDVRS() {
         try {
             const result = await this.Get("/livetv/dvrs");
@@ -153,6 +160,7 @@ class Plex {
             throw Error("GET /livetv/drs failed: " + err.message);
         }
     }
+
     async RefreshGuide(_dvrs) {
         try {
             const dvrs = typeof _dvrs !== "undefined" ? _dvrs : await this.GetDVRS();
@@ -163,6 +171,7 @@ class Plex {
             throw Error("Zort", err);
         }
     }
+
     async RefreshChannels(channels, _dvrs) {
         const dvrs = typeof _dvrs !== "undefined" ? _dvrs : await this.GetDVRS();
         const _channels = [];
@@ -183,4 +192,4 @@ class Plex {
     }
 }
 
-export default Plex;
+module.exports = Plex;

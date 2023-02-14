@@ -1,7 +1,7 @@
-FROM node:12.18-alpine3.12
+FROM node:18.14-bullseye
 WORKDIR /home/node/app
 COPY package*.json ./
-RUN apk add --update --no-cache python3 build-base gcc && ln -sf /usr/bin/python3 /usr/bin/python
+RUN apt update && apt install -y python3 build-essential && ln -sf /usr/bin/python3 /usr/bin/python
 RUN npm ci && npm install -g browserify pkg
 COPY . .
 ARG INFO_VERSION="unknown"

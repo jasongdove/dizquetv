@@ -1,4 +1,6 @@
-export default function (plex, dizquetv, $timeout, commonProgramTools) {
+"use strict";
+
+module.exports = function (plex, dizquetv, $timeout, commonProgramTools) {
     return {
         restrict: "E",
         templateUrl: "templates/plex-library.html",
@@ -9,9 +11,9 @@ export default function (plex, dizquetv, $timeout, commonProgramTools) {
             visible: "=visible",
             limit: "=limit",
         },
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             scope.errors = [];
-            if (typeof scope.limit == "undefined") {
+            if (typeof scope.limit === "undefined") {
                 scope.limit = 1000000000;
             }
             scope.customShows = [];
@@ -23,11 +25,10 @@ export default function (plex, dizquetv, $timeout, commonProgramTools) {
                 scope.allowedIndexes.push(i);
             }
             scope.selection = [];
-            scope.wait = (t) => {
-                return new Promise((resolve, reject) => {
+            scope.wait = (t) =>
+                new Promise((resolve, reject) => {
                     $timeout(resolve, t);
                 });
-            };
             scope.selectOrigin = function (origin) {
                 if (origin.type === "plex") {
                     scope.plexServer = origin.server;
@@ -74,7 +75,7 @@ export default function (plex, dizquetv, $timeout, commonProgramTools) {
                 scope.pending += library.nested.length;
                 try {
                     for (let i = 0; i < library.nested.length; i++) {
-                        // await scope.selectItem( library.nested[i] );
+                        //await scope.selectItem( library.nested[i] );
                         if (library.nested[i].type !== "collection" && library.nested[i].type !== "genre") {
                             await scope.selectShow(library.nested[i]);
                         }
@@ -92,13 +93,11 @@ export default function (plex, dizquetv, $timeout, commonProgramTools) {
                     scope.noServers = true;
                     return;
                 }
-                scope.origins = servers.map((s) => {
-                    return {
-                        type: "plex",
-                        name: `Plex - ${s.name}`,
-                        server: s,
-                    };
-                });
+                scope.origins = servers.map((s) => ({
+                    type: "plex",
+                    name: `Plex - ${s.name}`,
+                    server: s,
+                }));
                 scope.currentOrigin = scope.origins[0];
                 scope.plexServer = scope.currentOrigin.server;
                 scope.origins.push({
@@ -124,7 +123,7 @@ export default function (plex, dizquetv, $timeout, commonProgramTools) {
                 if (typeof x.nested === "undefined") {
                     x.nested = await plex.getNested(scope.plexServer, x, isLibrary, scope.errors);
                     if (x.type === "collection" && x.collectionType === "show") {
-                        const nested = x.nested;
+                        const { nested } = x;
                         x.nested = [];
                         for (let i = 0; i < nested.length; i++) {
                             const subNested = await plex.getNested(scope.plexServer, nested[i], false, scope.errors);
@@ -144,8 +143,8 @@ export default function (plex, dizquetv, $timeout, commonProgramTools) {
                 }, 0);
             };
 
-            scope.selectSeason = (season) => {
-                return new Promise((resolve, reject) => {
+            scope.selectSeason = (season) =>
+                new Promise((resolve, reject) => {
                     $timeout(async () => {
                         await scope.fillNestedIfNecessary(season);
                         let p = season.nested.length;
@@ -165,9 +164,8 @@ export default function (plex, dizquetv, $timeout, commonProgramTools) {
                         }
                     }, 0);
                 });
-            };
-            scope.selectShow = (show) => {
-                return new Promise((resolve, reject) => {
+            scope.selectShow = (show) =>
+                new Promise((resolve, reject) => {
                     $timeout(async () => {
                         await scope.fillNestedIfNecessary(show);
                         let p = show.nested.length;
@@ -187,9 +185,8 @@ export default function (plex, dizquetv, $timeout, commonProgramTools) {
                         }
                     }, 0);
                 });
-            };
-            scope.selectPlaylist = async (playlist) => {
-                return new Promise((resolve, reject) => {
+            scope.selectPlaylist = async (playlist) =>
+                new Promise((resolve, reject) => {
                     $timeout(async () => {
                         await scope.fillNestedIfNecessary(playlist);
                         for (let i = 0, l = playlist.nested.length; i < l; i++)
@@ -198,10 +195,8 @@ export default function (plex, dizquetv, $timeout, commonProgramTools) {
                         resolve();
                     }, 0);
                 });
-            };
-            scope.createShowIdentifier = (season, ep) => {
-                return "S" + season.toString().padStart(2, "0") + "E" + ep.toString().padStart(2, "0");
-            };
+            scope.createShowIdentifier = (season, ep) =>
+                "S" + season.toString().padStart(2, "0") + "E" + ep.toString().padStart(2, "0");
             scope.addCustomShow = async (show) => {
                 scope.pending++;
                 try {
@@ -219,9 +214,7 @@ export default function (plex, dizquetv, $timeout, commonProgramTools) {
                 }
             };
 
-            scope.getProgramDisplayTitle = (x) => {
-                return commonProgramTools.getProgramDisplayTitle(x);
-            };
+            scope.getProgramDisplayTitle = (x) => commonProgramTools.getProgramDisplayTitle(x);
 
             const updateCustomShows = async () => {
                 scope.customShows = await dizquetv.getAllShowsInfo();
@@ -240,7 +233,7 @@ export default function (plex, dizquetv, $timeout, commonProgramTools) {
                     }
                 }
                 if (r != "") {
-                    r = r + " - ";
+                    r += " - ";
                 }
                 r += show.title;
                 if (show.type !== "episode" && typeof show.year !== "undefined") {
@@ -250,4 +243,4 @@ export default function (plex, dizquetv, $timeout, commonProgramTools) {
             };
         },
     };
-}
+};

@@ -1,10 +1,12 @@
-export default function (dizquetv) {
+"use strict";
+
+module.exports = function (dizquetv) {
     return {
         restrict: "E",
         templateUrl: "templates/xmltv-settings.html",
         replace: true,
         scope: {},
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             dizquetv.getXmltvSettings().then((settings) => {
                 scope.settings = settings;
             });
@@ -20,4 +22,4 @@ export default function (dizquetv) {
             };
         },
     };
-}
+};

@@ -33,7 +33,7 @@
         "send_status_plex": "Send play status to Plex",
         "send_status_plex_note": "Note: This affects the \"on deck\" for your plex account.",
         "no_plex_path": "If stream changes video codec, audio codec, or audio channels upon episode change, you will experience playback issues unless ffmpeg transcoding and normalization are also enabled.",
-
+       
         "video_options": "Video Options",
         "supported_video_formats": "Supported Video Formats",
         "max_playable_resolution": "Max Playable Resolution",
@@ -59,6 +59,7 @@
         "path_replacements": "Path Replacements",
         "original_plex_path": "Original Plex path to replace:",
         "replace_plex_path": "Replace Plex path with:"
+
     },
     "settings_xmltv": {
         "title": "XMLTV Settings",

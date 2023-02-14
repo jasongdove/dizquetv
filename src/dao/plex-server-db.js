@@ -1,10 +1,12 @@
-// hmnn this is more of a "PlexServerService"...
+"use strict";
+
+//hmnn this is more of a "PlexServerService"...
 const ICON_REGEX = /https?:\/\/.*(\/library\/metadata\/\d+\/thumb\/\d+).X-Plex-Token=.*/;
 
 const ICON_FIELDS = ["icon", "showIcon", "seasonIcon", "episodeIcon"];
 
 // DB is a misnomer here, this is closer to a service
-export default class PlexServerDB {
+class PlexServerDB {
     constructor(channelService, fillerDB, showDB, db) {
         this.channelService = channelService;
         this.db = db;
@@ -25,7 +27,7 @@ export default class PlexServerDB {
                     modifiedPrograms: 0,
                 };
                 this.fixupProgramArray(channel.programs, name, newServer, channelReport);
-                // if fallback became offline, remove it
+                //if fallback became offline, remove it
                 if (
                     typeof channel.fallback !== "undefined" &&
                     channel.fallback.length > 0 &&
@@ -92,9 +94,7 @@ export default class PlexServerDB {
         if (typeof progs === "undefined") {
             return progs;
         }
-        return progs.filter((p) => {
-            return true !== p.isOffline;
-        });
+        return progs.filter((p) => p.isOffline !== true);
     }
 
     async fixupEveryProgramHolders(serverName, newServer) {
@@ -114,29 +114,29 @@ export default class PlexServerDB {
 
     async deleteServer(name) {
         const report = await this.fixupEveryProgramHolders(name, null);
-        this.db["plex-servers"].remove({ name: name });
+        this.db["plex-servers"].remove({ name });
         return report;
     }
 
     doesNameExist(name) {
-        return this.db["plex-servers"].find({ name: name }).length > 0;
+        return this.db["plex-servers"].find({ name }).length > 0;
     }
 
     async updateServer(server) {
-        const name = server.name;
+        const { name } = server;
         if (typeof name === "undefined") {
             throw Error("Missing server name from request");
         }
-        let s = this.db["plex-servers"].find({ name: name });
+        let s = this.db["plex-servers"].find({ name });
         if (s.length != 1) {
             throw Error("Server doesn't exist.");
         }
         s = s[0];
-        let arGuide = server.arGuide;
+        let { arGuide } = server;
         if (typeof arGuide === "undefined") {
             arGuide = false;
         }
-        let arChannels = server.arChannels;
+        let { arChannels } = server;
         if (typeof arChannels === "undefined") {
             arChannels = false;
         }
@@ -144,8 +144,8 @@ export default class PlexServerDB {
             name: s.name,
             uri: server.uri,
             accessToken: server.accessToken,
-            arGuide: arGuide,
-            arChannels: arChannels,
+            arGuide,
+            arChannels,
             index: s.index,
         };
         this.normalizeServer(newServer);
@@ -157,7 +157,7 @@ export default class PlexServerDB {
     }
 
     async addServer(server) {
-        let name = server.name;
+        let { name } = server;
         if (typeof name === "undefined") {
             name = "plex";
         }
@@ -169,7 +169,7 @@ export default class PlexServerDB {
             i += 1;
         }
         name = resultName;
-        let arGuide = server.arGuide;
+        let { arGuide } = server;
         if (typeof arGuide === "undefined") {
             arGuide = false;
         }
@@ -180,12 +180,12 @@ export default class PlexServerDB {
         const index = this.db["plex-servers"].find({}).length;
 
         const newServer = {
-            name: name,
+            name,
             uri: server.uri,
             accessToken: server.accessToken,
-            arGuide: arGuide,
-            arChannels: arChannels,
-            index: index,
+            arGuide,
+            arChannels,
+            index,
         };
         this.normalizeServer(newServer);
         this.db["plex-servers"].save(newServer);
@@ -198,6 +198,7 @@ export default class PlexServerDB {
             }
         }
     }
+
     fixupProgram(program, serverName, newServer, channelReport) {
         if (program.serverKey === serverName && newServer == null) {
             channelReport.destroyedPrograms += 1;
@@ -235,3 +236,5 @@ export default class PlexServerDB {
         }
     }
 }
+
+module.exports = PlexServerDB;

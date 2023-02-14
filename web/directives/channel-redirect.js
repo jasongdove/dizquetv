@@ -1,4 +1,6 @@
-export default function ($timeout, dizquetv) {
+"use strict";
+
+module.exports = function ($timeout, dizquetv) {
     return {
         restrict: "E",
         templateUrl: "templates/channel-redirect.html",
@@ -9,7 +11,7 @@ export default function ($timeout, dizquetv) {
             program: "=program",
             _onDone: "=onDone",
         },
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             scope.error = "";
             scope.options = [];
             scope.loading = true;
@@ -82,4 +84,4 @@ export default function ($timeout, dizquetv) {
             };
         },
     };
-}
+};

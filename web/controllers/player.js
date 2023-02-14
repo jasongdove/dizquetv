@@ -1,4 +1,6 @@
-export default function ($scope, dizquetv, $timeout) {
+"use strict";
+
+module.exports = function ($scope, dizquetv, $timeout) {
     $scope.loading = true;
     $scope.channelOptions = [{ id: undefined, description: "Select a channel" }];
     $scope.icons = {};
@@ -21,9 +23,7 @@ export default function ($scope, dizquetv, $timeout) {
         }
     };
 
-    $scope.buttonDisabled = () => {
-        return typeof $scope.channel === "undefined";
-    };
+    $scope.buttonDisabled = () => typeof $scope.channel === "undefined";
 
     $scope.endpoint = () => {
         if (typeof $scope.channel === "undefined") {
@@ -68,4 +68,4 @@ export default function ($scope, dizquetv, $timeout) {
     };
 
     loadChannels();
-}
+};

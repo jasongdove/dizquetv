@@ -1,4 +1,6 @@
-export default function ($timeout, dizquetv) {
+"use strict";
+
+module.exports = function ($timeout, dizquetv) {
     return {
         restrict: "E",
         templateUrl: "templates/flex-config.html",
@@ -9,7 +11,7 @@ export default function ($timeout, dizquetv) {
             visible: "=visible",
             onDone: "=onDone",
         },
-        link: function (scope, element, attrs) {
+        link(scope, element, attrs) {
             let updateNext = true;
             scope.$watch("program", () => {
                 try {
@@ -42,4 +44,4 @@ export default function ($timeout, dizquetv) {
             };
         },
     };
-}
+};

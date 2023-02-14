@@ -1,4 +1,6 @@
-export default function ($timeout, $location, dizquetv, resolutionOptions, getShowData, commonProgramTools) {
+"use strict";
+
+module.exports = function ($timeout, $location, dizquetv, resolutionOptions, getShowData, commonProgramTools) {
     return {
         restrict: "E",
         templateUrl: "templates/channel-config.html",
@@ -10,7 +12,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
             onDone: "=onDone",
         },
         link: {
-            post: function (scope, element, attrs) {
+            post(scope, element, attrs) {
                 scope.screenW = 1920;
                 scope.screenh = 1080;
 
@@ -182,7 +184,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                         scope.channel.onDemand.paused === true &&
                         !scope.fixedOnDemand
                     ) {
-                        // this should only happen once per channel
+                        //this should only happen once per channel
                         scope.fixedOnDemand = true;
                         originalStart = new Date().getTime();
                         originalStart -= scope.channel.onDemand.playedOffset;
@@ -194,7 +196,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                             originalStart -= n - m - scope.channel.onDemand.modulo;
                         }
                     }
-                    // scope.channel.totalDuration might not have been initialized
+                    //scope.channel.totalDuration might not have been initialized
                     let totalDuration = 0;
                     for (let i = 0; i < n; i++) {
                         totalDuration += scope.channel.programs[i].duration;
@@ -225,7 +227,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                 }
 
                 const addMinuteVersionsOfFields = () => {
-                    // add the minutes versions of the cooldowns:
+                    //add the minutes versions of the cooldowns:
                     scope.channel.fillerRepeatCooldownMinutes = scope.channel.fillerRepeatCooldown / 1000 / 60;
                     for (let i = 0; i < scope.channel.fillerCollections.length; i++) {
                         scope.channel.fillerCollections[i].cooldownMinutes =
@@ -265,21 +267,20 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                 scope.getTitle = () => {
                     if (scope.isNewChannel) {
                         return "Create Channel";
-                    } else {
-                        let x = "?";
-                        if (
-                            scope.channel.number != null &&
-                            typeof scope.channel.number !== "undefined" &&
-                            !isNaN(scope.channel.number)
-                        ) {
-                            x = "" + scope.channel.number;
-                        }
-                        let y = "Unnamed";
-                        if (typeof scope.channel.name !== "undefined") {
-                            y = scope.channel.name;
-                        }
-                        return `${x} - ${y}`;
                     }
+                    let x = "?";
+                    if (
+                        scope.channel.number != null &&
+                        typeof scope.channel.number !== "undefined" &&
+                        !isNaN(scope.channel.number)
+                    ) {
+                        x = String(scope.channel.number);
+                    }
+                    let y = "Unnamed";
+                    if (typeof scope.channel.name !== "undefined") {
+                        y = scope.channel.name;
+                    }
+                    return `${x} - ${y}`;
                 };
 
                 scope._selectedRedirect = {
@@ -306,7 +307,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                     return false;
                 };
                 scope.setUpWatcher = function setupWatchers() {
-                    this.$watch("vsRepeat.startIndex", function (val) {
+                    this.$watch("vsRepeat.startIndex", (val) => {
                         scope.currentStartIndex = val;
                     });
                 };
@@ -322,7 +323,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                 scope.finishedAddingOffline = (result) => {
                     const duration = result.durationSeconds * 1000;
                     const program = {
-                        duration: duration,
+                        duration,
                         isOffline: true,
                     };
                     scope.channel.programs.splice(scope.minProgramIndex, 0, program);
@@ -369,7 +370,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                     const t = new Date().getTime();
                     const total = scope.channel.duration;
                     while (t1 > t) {
-                        // TODO: Replace with division
+                        //TODO: Replace with division
                         t1 -= total;
                     }
                     scope.channel.startTime = new Date(t1);
@@ -378,7 +379,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                 };
                 scope.removeDuplicates = () => {
                     scope.channel.programs = commonProgramTools.removeDuplicates(scope.channel.programs);
-                    updateChannelDuration(); // oops someone forgot to add this
+                    updateChannelDuration(); //oops someone forgot to add this
                 };
                 scope.removeOffline = () => {
                     const tmpProgs = [];
@@ -433,21 +434,15 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                             scope.channel.offlineSoundtrack.length > 0
                         ) {
                             return "pic+sound";
-                        } else {
-                            return "pic";
                         }
-                    } else {
-                        return "clip";
+                        return "pic";
                     }
+                    return "clip";
                 };
 
-                scope.getProgramDisplayTitle = (x) => {
-                    return commonProgramTools.getProgramDisplayTitle(x);
-                };
+                scope.getProgramDisplayTitle = (x) => commonProgramTools.getProgramDisplayTitle(x);
 
-                scope.programSquareStyle = (x) => {
-                    return commonProgramTools.programSquareStyle(x);
-                };
+                scope.programSquareStyle = (x) => commonProgramTools.programSquareStyle(x);
 
                 scope.doReruns = (rerunStart, rerunBlockSize, rerunRepeats) => {
                     const o = new Date().getTimezoneOffset() * 60 * 1000;
@@ -519,9 +514,8 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                     function pos(x) {
                         if (x % m < a) {
                             return m + (x % m) - a;
-                        } else {
-                            return (x % m) - a;
                         }
+                        return (x % m) - a;
                     }
                     t -= pos(t);
                     scope.channel.startTime = new Date(t);
@@ -537,7 +531,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                                     isOffline: true,
                                 });
                             }
-                            // time to pad
+                            //time to pad
                             const d = m - p;
                             progs.push({
                                 duration: d,
@@ -588,7 +582,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                     scope.episodeMemory.saved = true;
                 };
                 scope.recoverPositions = () => {
-                    // this is basically the code for cyclic shuffle
+                    //this is basically the code for cyclic shuffle
                     const array = scope.channel.programs;
                     const shows = {};
                     const next = {};
@@ -606,7 +600,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                             const c = typeof counts[key] === "undefined" ? 0 : counts[key];
                             counts[key] = c + 1;
                             const showEntry = {
-                                c: c,
+                                c,
                                 it: vid,
                             };
                             if (typeof shows[data.showId] === "undefined") {
@@ -615,17 +609,16 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                             shows[data.showId].push(showEntry);
                         }
                     }
-                    // this is O(|N| log|M|) where |N| is the total number of TV
+                    //this is O(|N| log|M|) where |N| is the total number of TV
                     // episodes and |M| is the maximum number of episodes
                     // in a single show. I am pretty sure this is a lower bound
                     // on the time complexity that's possible here.
-                    Object.keys(shows).forEach(function (key, index) {
+                    Object.keys(shows).forEach((key, index) => {
                         shows[key].sort((a, b) => {
                             if (a.c == b.c) {
                                 return getShowData(a.it).order - getShowData(b.it).order;
-                            } else {
-                                return a.c < b.c ? -1 : 1;
                             }
+                            return a.c < b.c ? -1 : 1;
                         });
                         next[key] = 0;
                         if (typeof scope.episodeMemory[key] !== "undefined") {
@@ -651,12 +644,10 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                     scope.channel.programs = array;
                     updateChannelDuration();
                 };
-                scope.cannotRecoverPositions = () => {
-                    return scope.episodeMemory.saved !== true;
-                };
+                scope.cannotRecoverPositions = () => scope.episodeMemory.saved !== true;
 
                 scope.addBreaks = (afterMinutes, minDurationSeconds, maxDurationSeconds) => {
-                    const after = afterMinutes * 60 * 1000 + 5000; // allow some seconds of excess
+                    const after = afterMinutes * 60 * 1000 + 5000; //allow some seconds of excess
                     const minDur = minDurationSeconds;
                     const maxDur = maxDurationSeconds;
                     const progs = [];
@@ -691,7 +682,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                     scope.removeOffline();
                     const progs = [];
                     let t = scope.channel.startTime.getTime();
-                    t = t - (t % mod);
+                    t -= t % mod;
                     scope.channel.startTime = new Date(t);
                     function addPad(force) {
                         const m = t % mod;
@@ -749,9 +740,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                                 const tmp = index;
                                 index = getRandomInt(0, keys.length - 1);
                                 while (keys.length > 1 && tmp == index) index = getRandomInt(0, keys.length - 1);
-                            } else {
-                                if (index >= keys.length) index = 0;
-                            }
+                            } else if (index >= keys.length) index = 0;
                             continue;
                         }
                         for (let i = 0, l = blockCount; i < l; i++) {
@@ -802,7 +791,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                         }
                     }
                     let mx = 0;
-                    Object.keys(programs).forEach(function (key, index) {
+                    Object.keys(programs).forEach((key, index) => {
                         mx = Math.max(mx, programs[key]);
                     });
                     const arr = [];
@@ -843,11 +832,9 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                     scope.channel.programs = [];
                     updateChannelDuration();
                 };
-                scope.makeOfflineFromChannel = (duration) => {
-                    return {
-                        durationSeconds: duration,
-                    };
-                };
+                scope.makeOfflineFromChannel = (duration) => ({
+                    durationSeconds: duration,
+                });
                 scope.addOffline = () => {
                     scope._addingOffline = scope.makeOfflineFromChannel(10 * 60);
                 };
@@ -880,7 +867,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                         shows[code].episodes.push(vid);
                     }
                     let maxDuration = 0;
-                    Object.keys(shows).forEach(function (key, index) {
+                    Object.keys(shows).forEach((key, index) => {
                         let w = 3;
                         if (typeof freqObject[key] !== "undefined") {
                             w = freqObject[key];
@@ -890,16 +877,16 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                     });
                     let F = 2;
                     let good = true;
-                    Object.keys(shows).forEach(function (key, index) {
+                    Object.keys(shows).forEach((key, index) => {
                         const amount = Math.floor((maxDuration * F) / shows[key].total);
                         good = good && amount % F == 0;
                     });
                     if (good) {
                         F = 1;
                     }
-                    Object.keys(shows).forEach(function (key, index) {
+                    Object.keys(shows).forEach((key, index) => {
                         const amount = Math.floor((maxDuration * F) / shows[key].total);
-                        const episodes = shows[key].episodes;
+                        const { episodes } = shows[key];
                         if (amount % F != 0) {
                         }
                         for (let i = 0; i < amount; i++) {
@@ -961,7 +948,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                         await scope.onDone();
                         $timeout();
                     } else {
-                        channelNumbers = [];
+                        const channelNumbers = [];
                         for (let i = 0, l = scope.channels.length; i < l; i++)
                             channelNumbers.push(scope.channels[i].number);
                         // validate
@@ -1052,10 +1039,8 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                                     scope.error.tab = "programming";
                                 } else {
                                     const cloned = JSON.parse(s);
-                                    // clean up some stuff that's only used by the UI:
-                                    cloned.fillerCollections = cloned.fillerCollections.filter((f) => {
-                                        return f.id != "none";
-                                    });
+                                    //clean up some stuff that's only used by the UI:
+                                    cloned.fillerCollections = cloned.fillerCollections.filter((f) => f.id != "none");
                                     cloned.fillerCollections.forEach((c) => {
                                         delete c.percentage;
                                         delete c.options;
@@ -1129,9 +1114,8 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                 scope.maxReplicas = () => {
                     if (scope.channel.programs.length == 0) {
                         return 1;
-                    } else {
-                        return Math.floor(scope.maxSize / scope.channel.programs.length);
                     }
+                    return Math.floor(scope.maxSize / scope.channel.programs.length);
                 };
                 scope.removeItem = (x) => {
                     scope.channel.programs.splice(x, 1);
@@ -1165,9 +1149,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                     scope.tool = toolName;
                 };
 
-                scope.hasPrograms = () => {
-                    return scope.channel.programs.length > 0;
-                };
+                scope.hasPrograms = () => scope.channel.programs.length > 0;
 
                 scope.showPlexLibrary = () => {
                     scope.displayPlexLibrary = true;
@@ -1183,9 +1165,8 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                     localStorage.setItem("channel-tools-position", scope.reverseTools ? "left" : "right");
                 };
 
-                scope.disablePadding = () => {
-                    return scope.paddingOption.id == -1 || 2 * scope.channel.programs.length > scope.maxSize;
-                };
+                scope.disablePadding = () =>
+                    scope.paddingOption.id == -1 || 2 * scope.channel.programs.length > scope.maxSize;
                 scope.paddingOptions = [
                     { id: -1, description: "Allowed start times", allow5: false },
                     { id: 30, description: ":00, :30", allow5: false },
@@ -1199,15 +1180,12 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                 ];
                 scope.paddingOption = scope.paddingOptions[0];
 
-                scope.breaksDisabled = () => {
-                    return (
-                        scope.breakAfter == -1 ||
-                        scope.minBreakSize == -1 ||
-                        scope.maxBreakSize == -1 ||
-                        scope.minBreakSize > scope.maxBreakSize ||
-                        2 * scope.channel.programs.length > scope.maxSize
-                    );
-                };
+                scope.breaksDisabled = () =>
+                    scope.breakAfter == -1 ||
+                    scope.minBreakSize == -1 ||
+                    scope.maxBreakSize == -1 ||
+                    scope.minBreakSize > scope.maxBreakSize ||
+                    2 * scope.channel.programs.length > scope.maxSize;
 
                 scope.breakAfterOptions = [
                     { id: -1, description: "After" },
@@ -1261,14 +1239,11 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                     { id: 4, description: "4" },
                     { id: 6, description: "6" },
                 ];
-                scope.rerunsDisabled = () => {
-                    return (
-                        scope.rerunStart == -1 ||
-                        scope.rerunBlockSize == -1 ||
-                        scope.rerunRepeats == -1 ||
-                        scope.channel.programs.length * scope.rerunRepeats > scope.maxSize
-                    );
-                };
+                scope.rerunsDisabled = () =>
+                    scope.rerunStart == -1 ||
+                    scope.rerunBlockSize == -1 ||
+                    scope.rerunRepeats == -1 ||
+                    scope.channel.programs.length * scope.rerunRepeats > scope.maxSize;
 
                 scope.openFallbackLibrary = () => {
                     scope.showFallbackPlexLibrary = true;
@@ -1285,12 +1260,10 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                     scope.showFallbackPlexLibrary = false;
                 };
 
-                scope.fillerOptions = scope.channel.fillerCollections.map((f) => {
-                    return {
-                        id: f.id,
-                        name: `(${f.id})`,
-                    };
-                });
+                scope.fillerOptions = scope.channel.fillerCollections.map((f) => ({
+                    id: f.id,
+                    name: `(${f.id})`,
+                }));
 
                 scope.slide = {
                     value: -1,
@@ -1346,7 +1319,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                         }
                     }
                     if (scope.channel.fillerCollections[index].id == "none") {
-                        added["none"] = true;
+                        added.none = true;
                         options.push({
                             id: "none",
                             name: "Add a filler list...",
@@ -1361,16 +1334,14 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                     return options;
                 };
 
-                scope.programmingHeight = () => {
-                    return scope.programming.maxHeight + "rem";
-                };
+                scope.programmingHeight = () => scope.programming.maxHeight + "rem";
                 const setProgrammingHeight = (h) => {
                     scope.programming.step++;
                     $timeout(() => {
                         scope.programming.step--;
                     }, 1000);
                     scope.programming.maxHeight = h;
-                    localStorage.setItem("channel-programming-list-height", "" + h);
+                    localStorage.setItem("channel-programming-list-height", String(h));
                 };
                 scope.programmingZoomIn = () => {
                     let h = scope.programming.maxHeight;
@@ -1429,12 +1400,10 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                 const refreshFillerOptions = async () => {
                     try {
                         const r = await dizquetv.getAllFillersInfo();
-                        scope.fillerOptions = r.map((f) => {
-                            return {
-                                id: f.id,
-                                name: f.name,
-                            };
-                        });
+                        scope.fillerOptions = r.map((f) => ({
+                            id: f.id,
+                            name: f.name,
+                        }));
                         scope.refreshFillerStuff();
                         scope.$apply();
                     } catch (err) {
@@ -1492,9 +1461,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                 };
                 refreshScreenResolution();
 
-                scope.showList = () => {
-                    return !scope.showFallbackPlexLibrary;
-                };
+                scope.showList = () => !scope.showFallbackPlexLibrary;
 
                 scope.deleteFillerList = (index) => {
                     scope.channel.fillerCollections.splice(index, 1);
@@ -1537,44 +1504,43 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                 scope.getWatermarkPreviewRectangle = (p, q) => {
                     const s = scope.getCurrentWH();
                     if (s.w * q == s.h * p) {
-                        // not necessary, hide it
+                        //not necessary, hide it
                         return {
                             position: "absolute",
                             visibility: "hidden",
                         };
-                    } else {
-                        // assume width is equal
-                        // s.w / h2 = p / q
-                        const h2 = (s.w * q * 100) / (p * s.h);
-                        let w2 = 100;
-                        let left = undefined;
-                        let top = undefined;
-                        if (h2 > 100) {
-                            // wrong
-                            // the other way around
-                            w2 = ((s.h / s.w) * p * 100) / q;
-                            left = (100 - w2) / 2;
-                        } else {
-                            top = (100 - h2) / 2;
-                        }
-                        const padding = (100 * q) / p;
-                        return {
-                            "width": `${w2}%`,
-                            "padding-top": "0",
-                            "padding-left": "0",
-                            "padding-right": "0",
-                            "padding-bottom": `${padding}%`,
-                            "margin": "0",
-                            "left": `${left}%`,
-                            "top": `${top}%`,
-                            "position": "absolute",
-                        };
                     }
+                    //assume width is equal
+                    // s.w / h2 = p / q
+                    const h2 = (s.w * q * 100) / (p * s.h);
+                    let w2 = 100;
+                    let left;
+                    let top;
+                    if (h2 > 100) {
+                        //wrong
+                        //the other way around
+                        w2 = ((s.h / s.w) * p * 100) / q;
+                        left = (100 - w2) / 2;
+                    } else {
+                        top = (100 - h2) / 2;
+                    }
+                    const padding = (100 * q) / p;
+                    return {
+                        "width": `${w2}%`,
+                        "padding-top": "0",
+                        "padding-left": "0",
+                        "padding-right": "0",
+                        "padding-bottom": `${padding}%`,
+                        "margin": "0",
+                        "left": `${left}%`,
+                        "top": `${top}%`,
+                        "position": "absolute",
+                    };
                 };
 
                 scope.getWatermarkSrc = () => {
-                    let url = scope.channel.watermark.url;
-                    if (url == null || typeof url == "undefined" || url == "") {
+                    let { url } = scope.channel.watermark;
+                    if (url == null || typeof url === "undefined" || url == "") {
                         url = scope.channel.icon;
                     }
                     return url;
@@ -1593,17 +1559,17 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                     const mH = scope.channel.watermark.horizontalMargin;
                     const mV = scope.channel.watermark.verticalMargin;
                     if (scope.channel.watermark.position == "top-left") {
-                        res["top"] = `${mV}%`;
-                        res["left"] = `${mH}%`;
+                        res.top = `${mV}%`;
+                        res.left = `${mH}%`;
                     } else if (scope.channel.watermark.position == "top-right") {
-                        res["top"] = `${mV}%`;
-                        res["right"] = `${mH}%`;
+                        res.top = `${mV}%`;
+                        res.right = `${mH}%`;
                     } else if (scope.channel.watermark.position == "bottom-right") {
-                        res["bottom"] = `${mV}%`;
-                        res["right"] = `${mH}%`;
+                        res.bottom = `${mV}%`;
+                        res.right = `${mH}%`;
                     } else if (scope.channel.watermark.position == "bottom-left") {
-                        res["bottom"] = `${mV}%`;
-                        res["left"] = `${mH}%`;
+                        res.bottom = `${mV}%`;
+                        res.left = `${mH}%`;
                     } else {
                         console.log("huh? " + scope.channel.watermark.position);
                     }
@@ -1634,7 +1600,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                     }
 
                     while (t1 > t) {
-                        // TODO: Replace with division
+                        //TODO: Replace with division
                         t1 -= total;
                     }
                     scope.channel.startTime = new Date(t1);
@@ -1673,27 +1639,21 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                     const progs = commonProgramTools.removeDuplicates(scope.channel.programs);
                     scope.randomSlots.startDialog(progs, scope.maxSize, scope.channel.randomScheduleBackup, true);
                 };
-                scope.hasNoRandomSlots = () => {
-                    return (
-                        typeof scope.channel.randomScheduleBackup === "undefined" ||
-                        scope.channel.randomScheduleBackup == null
-                    );
-                };
+                scope.hasNoRandomSlots = () =>
+                    typeof scope.channel.randomScheduleBackup === "undefined" ||
+                    scope.channel.randomScheduleBackup == null;
 
                 scope.rerollTimeSlots = () => {
                     const progs = commonProgramTools.removeDuplicates(scope.channel.programs);
                     scope.timeSlots.startDialog(progs, scope.maxSize, scope.channel.scheduleBackup, true);
                 };
-                scope.hasNoTimeSlots = () => {
-                    return typeof scope.channel.scheduleBackup === "undefined" || scope.channel.scheduleBackup == null;
-                };
+                scope.hasNoTimeSlots = () =>
+                    typeof scope.channel.scheduleBackup === "undefined" || scope.channel.scheduleBackup == null;
                 scope.toggleAdvanced = () => {
                     scope.advancedTools = !scope.advancedTools;
                     localStorage.setItem("channel-programming-advanced-tools", scope.advancedTools ? "show" : "hide");
                 };
-                scope.hasAdvancedTools = () => {
-                    return scope.advancedTools;
-                };
+                scope.hasAdvancedTools = () => scope.advancedTools;
 
                 scope.toolWide = () => {
                     if (scope.hasAdvancedTools()) {
@@ -1701,12 +1661,11 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                             "col-xl-6": true,
                             "col-md-12": true,
                         };
-                    } else {
-                        return {
-                            "col-xl-12": true,
-                            "col-lg-12": true,
-                        };
                     }
+                    return {
+                        "col-xl-12": true,
+                        "col-lg-12": true,
+                    };
                 };
 
                 scope.toolThin = () => {
@@ -1715,12 +1674,11 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                             "col-xl-3": true,
                             "col-lg-6": true,
                         };
-                    } else {
-                        return {
-                            "col-xl-6": true,
-                            "col-lg-6": true,
-                        };
                     }
+                    return {
+                        "col-xl-6": true,
+                        "col-lg-6": true,
+                    };
                 };
 
                 scope.logoOnChange = (event) => {
@@ -1740,7 +1698,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
                 };
             },
 
-            pre: function (scope) {
+            pre(scope) {
                 scope.timeSlots = null;
                 scope.randomSlots = null;
                 scope.registerTimeSlots = (timeSlots) => {
@@ -1752,7 +1710,7 @@ export default function ($timeout, $location, dizquetv, resolutionOptions, getSh
             },
         },
     };
-}
+};
 function validURL(url) {
     return /^(ftp|http|https):\/\/[^ "]+$/.test(url);
 }
@@ -1760,8 +1718,7 @@ function validURL(url) {
 function checkChannelNumber(number) {
     if (/^(([1-9][0-9]*)|(0))$/.test(number)) {
         const x = parseInt(number);
-        return 0 <= x && x < 10000;
-    } else {
-        return false;
+        return x >= 0 && x < 10000;
     }
+    return false;
 }

@@ -1,6 +1,8 @@
-import { join, basename, extname } from "path";
-import { v4 as uuidv4 } from "uuid";
-import { readFile, writeFile, unlink, readdir } from "fs";
+"use strict";
+
+const path = require("path");
+const { v4: uuidv4 } = require("uuid");
+const fs = require("fs");
 
 class CustomShowDB {
     constructor(folder) {
@@ -8,10 +10,10 @@ class CustomShowDB {
     }
 
     async $loadShow(id) {
-        const f = join(this.folder, `${id}.json`);
+        const f = path.join(this.folder, `${id}.json`);
         try {
             return await new Promise((resolve, reject) => {
-                readFile(f, (err, data) => {
+                fs.readFile(f, (err, data) => {
                     if (err) {
                         return reject(err);
                     }
@@ -38,19 +40,19 @@ class CustomShowDB {
         if (typeof id === "undefined") {
             throw Error("Mising custom show id");
         }
-        const f = join(this.folder, `${id}.json`);
+        const f = path.join(this.folder, `${id}.json`);
 
         await new Promise((resolve, reject) => {
-            let data = undefined;
+            let data;
             try {
-                // id is determined by the file name, not the contents
+                //id is determined by the file name, not the contents
                 fixup(json);
                 delete json.id;
                 data = JSON.stringify(json);
             } catch (err) {
                 return reject(err);
             }
-            writeFile(f, data, (err) => {
+            fs.writeFile(f, data, (err) => {
                 if (err) {
                     return reject(err);
                 }
@@ -67,9 +69,9 @@ class CustomShowDB {
     }
 
     async deleteShow(id) {
-        const f = join(this.folder, `${id}.json`);
+        const f = path.join(this.folder, `${id}.json`);
         await new Promise((resolve, reject) => {
-            unlink(f, function (err) {
+            fs.unlink(f, (err) => {
                 if (err) {
                     return reject(err);
                 }
@@ -80,14 +82,14 @@ class CustomShowDB {
 
     async getAllShowIds() {
         return await new Promise((resolve, reject) => {
-            readdir(this.folder, function (err, items) {
+            fs.readdir(this.folder, (err, items) => {
                 if (err) {
                     return reject(err);
                 }
                 const fillerIds = [];
                 for (let i = 0; i < items.length; i++) {
-                    const name = basename(items[i]);
-                    if (extname(name) === ".json") {
+                    const name = path.basename(items[i]);
+                    if (path.extname(name) === ".json") {
                         const id = name.slice(0, -5);
                         fillerIds.push(id);
                     }
@@ -103,15 +105,13 @@ class CustomShowDB {
     }
 
     async getAllShowsInfo() {
-        // returns just name and id
+        //returns just name and id
         const shows = await this.getAllShows();
-        return shows.map((f) => {
-            return {
-                id: f.id,
-                name: f.name,
-                count: f.content.length,
-            };
-        });
+        return shows.map((f) => ({
+            id: f.id,
+            name: f.name,
+            count: f.content.length,
+        }));
     }
 }
 
@@ -124,4 +124,4 @@ function fixup(json) {
     }
 }
 
-export default CustomShowDB;
+module.exports = CustomShowDB;

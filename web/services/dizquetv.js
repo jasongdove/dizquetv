@@ -1,35 +1,23 @@
-export default function ($http, $q) {
+"use strict";
+
+module.exports = function ($http, $q) {
     return {
-        getVersion: () => {
-            return $http.get("/api/version").then((d) => {
-                return d.data;
-            });
-        },
-        getPlexServers: () => {
-            return $http.get("/api/plex-servers").then((d) => {
-                return d.data;
-            });
-        },
-        addPlexServer: (plexServer) => {
-            return $http({
+        getVersion: () => $http.get("/api/version").then((d) => d.data),
+        getPlexServers: () => $http.get("/api/plex-servers").then((d) => d.data),
+        addPlexServer: (plexServer) =>
+            $http({
                 method: "PUT",
                 url: "/api/plex-servers",
                 data: plexServer,
                 headers: { "Content-Type": "application/json; charset=utf-8" },
-            }).then((d) => {
-                return d.data;
-            });
-        },
-        updatePlexServer: (plexServer) => {
-            return $http({
+            }).then((d) => d.data),
+        updatePlexServer: (plexServer) =>
+            $http({
                 method: "POST",
                 url: "/api/plex-servers",
                 data: plexServer,
                 headers: { "Content-Type": "application/json; charset=utf-8" },
-            }).then((d) => {
-                return d.data;
-            });
-        },
+            }).then((d) => d.data),
         checkExistingPlexServer: async (serverName) => {
             const d = await $http({
                 method: "POST",
@@ -57,193 +45,114 @@ export default function ($http, $q) {
             });
             return d.data;
         },
-        getPlexSettings: () => {
-            return $http.get("/api/plex-settings").then((d) => {
-                return d.data;
-            });
-        },
-        updatePlexSettings: (config) => {
-            return $http({
+        getPlexSettings: () => $http.get("/api/plex-settings").then((d) => d.data),
+        updatePlexSettings: (config) =>
+            $http({
                 method: "PUT",
                 url: "/api/plex-settings",
                 data: angular.toJson(config),
                 headers: { "Content-Type": "application/json; charset=utf-8" },
-            }).then((d) => {
-                return d.data;
-            });
-        },
-        resetPlexSettings: (config) => {
-            return $http({
+            }).then((d) => d.data),
+        resetPlexSettings: (config) =>
+            $http({
                 method: "POST",
                 url: "/api/plex-settings",
                 data: angular.toJson(config),
                 headers: { "Content-Type": "application/json; charset=utf-8" },
-            }).then((d) => {
-                return d.data;
-            });
-        },
-        getFfmpegSettings: () => {
-            return $http.get("/api/ffmpeg-settings").then((d) => {
-                return d.data;
-            });
-        },
-        updateFfmpegSettings: (config) => {
-            return $http({
+            }).then((d) => d.data),
+        getFfmpegSettings: () => $http.get("/api/ffmpeg-settings").then((d) => d.data),
+        updateFfmpegSettings: (config) =>
+            $http({
                 method: "PUT",
                 url: "/api/ffmpeg-settings",
                 data: angular.toJson(config),
                 headers: { "Content-Type": "application/json; charset=utf-8" },
-            }).then((d) => {
-                return d.data;
-            });
-        },
-        resetFfmpegSettings: (config) => {
-            return $http({
+            }).then((d) => d.data),
+        resetFfmpegSettings: (config) =>
+            $http({
                 method: "POST",
                 url: "/api/ffmpeg-settings",
                 data: angular.toJson(config),
                 headers: { "Content-Type": "application/json; charset=utf-8" },
-            }).then((d) => {
-                return d.data;
-            });
-        },
-        getXmltvSettings: () => {
-            return $http.get("/api/xmltv-settings").then((d) => {
-                return d.data;
-            });
-        },
-        updateXmltvSettings: (config) => {
-            return $http({
+            }).then((d) => d.data),
+        getXmltvSettings: () => $http.get("/api/xmltv-settings").then((d) => d.data),
+        updateXmltvSettings: (config) =>
+            $http({
                 method: "PUT",
                 url: "/api/xmltv-settings",
                 data: angular.toJson(config),
                 headers: { "Content-Type": "application/json; charset=utf-8" },
-            }).then((d) => {
-                return d.data;
-            });
-        },
-        resetXmltvSettings: (config) => {
-            return $http({
+            }).then((d) => d.data),
+        resetXmltvSettings: (config) =>
+            $http({
                 method: "POST",
                 url: "/api/xmltv-settings",
                 data: angular.toJson(config),
                 headers: { "Content-Type": "application/json; charset=utf-8" },
-            }).then((d) => {
-                return d.data;
-            });
-        },
-        getHdhrSettings: () => {
-            return $http.get("/api/hdhr-settings").then((d) => {
-                return d.data;
-            });
-        },
-        updateHdhrSettings: (config) => {
-            return $http({
+            }).then((d) => d.data),
+        getHdhrSettings: () => $http.get("/api/hdhr-settings").then((d) => d.data),
+        updateHdhrSettings: (config) =>
+            $http({
                 method: "PUT",
                 url: "/api/hdhr-settings",
                 data: angular.toJson(config),
                 headers: { "Content-Type": "application/json; charset=utf-8" },
-            }).then((d) => {
-                return d.data;
-            });
-        },
-        resetHdhrSettings: (config) => {
-            return $http({
+            }).then((d) => d.data),
+        resetHdhrSettings: (config) =>
+            $http({
                 method: "POST",
                 url: "/api/hdhr-settings",
                 data: angular.toJson(config),
                 headers: { "Content-Type": "application/json; charset=utf-8" },
-            }).then((d) => {
-                return d.data;
-            });
-        },
-        getChannels: () => {
-            return $http.get("/api/channels").then((d) => {
-                return d.data;
-            });
-        },
+            }).then((d) => d.data),
+        getChannels: () => $http.get("/api/channels").then((d) => d.data),
 
-        getChannel: (number) => {
-            return $http.get(`/api/channel/${number}`).then((d) => {
-                return d.data;
-            });
-        },
+        getChannel: (number) => $http.get(`/api/channel/${number}`).then((d) => d.data),
 
-        getChannelDescription: (number) => {
-            return $http.get(`/api/channel/description/${number}`).then((d) => {
-                return d.data;
-            });
-        },
+        getChannelDescription: (number) => $http.get(`/api/channel/description/${number}`).then((d) => d.data),
 
-        getChannelProgramless: (number) => {
-            return $http.get(`/api/channel/programless/${number}`).then((d) => {
-                return d.data;
-            });
-        },
-        getChannelPrograms: (number) => {
-            return $http.get(`/api/channel/programs/${number}`).then((d) => {
-                return d.data;
-            });
-        },
+        getChannelProgramless: (number) => $http.get(`/api/channel/programless/${number}`).then((d) => d.data),
+        getChannelPrograms: (number) => $http.get(`/api/channel/programs/${number}`).then((d) => d.data),
 
-        getChannelNumbers: () => {
-            return $http.get("/api/channelNumbers").then((d) => {
-                return d.data;
-            });
-        },
+        getChannelNumbers: () => $http.get("/api/channelNumbers").then((d) => d.data),
 
-        addChannel: (channel) => {
-            return $http({
+        addChannel: (channel) =>
+            $http({
                 method: "POST",
                 url: "/api/channel",
                 data: angular.toJson(channel),
                 headers: { "Content-Type": "application/json; charset=utf-8" },
-            }).then((d) => {
-                return d.data;
-            });
-        },
-        uploadImage: (file) => {
-            return $http({
+            }).then((d) => d.data),
+        uploadImage: (file) =>
+            $http({
                 method: "POST",
                 url: "/api/upload/image",
                 data: file,
                 headers: { "Content-Type": undefined },
-            }).then((d) => {
-                return d.data;
-            });
-        },
-        addChannelWatermark: (file) => {
-            return $http({
+            }).then((d) => d.data),
+        addChannelWatermark: (file) =>
+            $http({
                 method: "POST",
                 url: "/api/channel/watermark",
                 data: file,
                 headers: { "Content-Type": undefined },
-            }).then((d) => {
-                return d.data;
-            });
-        },
-        updateChannel: (channel) => {
-            return $http({
+            }).then((d) => d.data),
+        updateChannel: (channel) =>
+            $http({
                 method: "PUT",
                 url: "/api/channel",
                 data: angular.toJson(channel),
                 headers: { "Content-Type": "application/json; charset=utf-8" },
-            }).then((d) => {
-                return d.data;
-            });
-        },
-        removeChannel: (channel) => {
-            return $http({
+            }).then((d) => d.data),
+        removeChannel: (channel) =>
+            $http({
                 method: "DELETE",
                 url: "/api/channel",
                 data: angular.toJson(channel),
                 headers: { "Content-Type": "application/json; charset=utf-8" },
-            }).then((d) => {
-                return d.data;
-            });
-        },
+            }).then((d) => d.data),
 
-        /* ======================================================================
+        /*======================================================================
          * Filler stuff
          */
         getAllFillersInfo: async () => {
@@ -256,44 +165,39 @@ export default function ($http, $q) {
             return f.data;
         },
 
-        updateFiller: async (id, filler) => {
-            return (
+        updateFiller: async (id, filler) =>
+            (
                 await $http({
                     method: "POST",
                     url: `/api/filler/${id}`,
                     data: angular.toJson(filler),
                     headers: { "Content-Type": "application/json; charset=utf-8" },
                 })
-            ).data;
-        },
+            ).data,
 
-        createFiller: async (filler) => {
-            return (
+        createFiller: async (filler) =>
+            (
                 await $http({
                     method: "PUT",
                     url: `/api/filler`,
                     data: angular.toJson(filler),
                     headers: { "Content-Type": "application/json; charset=utf-8" },
                 })
-            ).data;
-        },
+            ).data,
 
-        deleteFiller: async (id) => {
-            return (
+        deleteFiller: async (id) =>
+            (
                 await $http({
                     method: "DELETE",
                     url: `/api/filler/${id}`,
                     data: {},
                     headers: { "Content-Type": "application/json; charset=utf-8" },
                 })
-            ).data;
-        },
+            ).data,
 
-        getChannelsUsingFiller: async (fillerId) => {
-            return (await $http.get(`/api/filler/${fillerId}/channels`)).data;
-        },
+        getChannelsUsingFiller: async (fillerId) => (await $http.get(`/api/filler/${fillerId}/channels`)).data,
 
-        /* ======================================================================
+        /*======================================================================
          * Custom Show stuff
          */
         getAllShowsInfo: async () => {
@@ -306,40 +210,37 @@ export default function ($http, $q) {
             return f.data;
         },
 
-        updateShow: async (id, show) => {
-            return (
+        updateShow: async (id, show) =>
+            (
                 await $http({
                     method: "POST",
                     url: `/api/show/${id}`,
                     data: angular.toJson(show),
                     headers: { "Content-Type": "application/json; charset=utf-8" },
                 })
-            ).data;
-        },
+            ).data,
 
-        createShow: async (show) => {
-            return (
+        createShow: async (show) =>
+            (
                 await $http({
                     method: "PUT",
                     url: `/api/show`,
                     data: angular.toJson(show),
                     headers: { "Content-Type": "application/json; charset=utf-8" },
                 })
-            ).data;
-        },
+            ).data,
 
-        deleteShow: async (id) => {
-            return (
+        deleteShow: async (id) =>
+            (
                 await $http({
                     method: "DELETE",
                     url: `/api/show/${id}`,
                     data: {},
                     headers: { "Content-Type": "application/json; charset=utf-8" },
                 })
-            ).data;
-        },
+            ).data,
 
-        /* ======================================================================
+        /*======================================================================
          * TV Guide endpoints
          */
         getGuideStatus: async () => {
@@ -362,7 +263,7 @@ export default function ($http, $q) {
             return d.data;
         },
 
-        /* ======================================================================
+        /*======================================================================
          * Channel Tool Services
          */
         calculateTimeSlots: async (programs, schedule) => {
@@ -370,8 +271,8 @@ export default function ($http, $q) {
                 method: "POST",
                 url: "/api/channel-tools/time-slots",
                 data: {
-                    programs: programs,
-                    schedule: schedule,
+                    programs,
+                    schedule,
                 },
                 headers: { "Content-Type": "application/json; charset=utf-8" },
             });
@@ -383,15 +284,15 @@ export default function ($http, $q) {
                 method: "POST",
                 url: "/api/channel-tools/random-slots",
                 data: {
-                    programs: programs,
-                    schedule: schedule,
+                    programs,
+                    schedule,
                 },
                 headers: { "Content-Type": "application/json; charset=utf-8" },
             });
             return d.data;
         },
 
-        /* ======================================================================
+        /*======================================================================
          * Settings
          */
         getAllSettings: async () => {
@@ -431,4 +332,4 @@ export default function ($http, $q) {
             return deferred.promise;
         },
     };
-}
+};

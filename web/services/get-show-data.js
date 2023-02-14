@@ -1,6 +1,8 @@
-// This is an exact copy of the file with the same now in the nodejs
-// one of these days, we'll figure out how to share the code.
-export default function () {
+"use strict";
+
+//This is an exact copy of the file with the same now in the nodejs
+//one of these days, we'll figure out how to share the code.
+module.exports = function () {
     const movieTitleOrder = {};
     let movieTitleOrderNumber = 0;
 
@@ -54,10 +56,9 @@ export default function () {
                 showDisplayName: program.showTitle,
                 order: s * 1000000 + e,
             };
-        } else {
-            return {
-                hasShow: false,
-            };
         }
+        return {
+            hasShow: false,
+        };
     };
-}
+};
