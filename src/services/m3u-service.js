@@ -1,3 +1,5 @@
+"use strict";
+
 /**
  * Manager and Generate M3U content
  *
@@ -10,7 +12,7 @@ class M3uService {
         this.cacheReady = false;
         this.channelService.on("channel-update", (data) => {
             this.clearCache();
-        } );
+        });
     }
 
     /**
@@ -34,37 +36,34 @@ class M3uService {
 
     async buildM3uList(host) {
         if (this.cacheReady) {
-            const cachedM3U = await this.cacheService.getCache('channels.m3u');
+            const cachedM3U = await this.cacheService.getCache("channels.m3u");
             if (cachedM3U) {
                 return this.replaceHostOnM3u(host, cachedM3U);
             }
         }
-        let channels = await this.channelService.getAllChannels();
+        const channels = await this.channelService.getAllChannels();
 
-
-        channels.sort((a, b) => {
-            return parseInt(a.number) < parseInt(b.number) ? -1 : 1
-        });
+        channels.sort((a, b) => (parseInt(a.number) < parseInt(b.number) ? -1 : 1));
 
         const tvg = `{{host}}/api/xmltv.xml`;
 
         let data = `#EXTM3U url-tvg="${tvg}" x-tvg-url="${tvg}"\n`;
 
-        for (var i = 0; i < channels.length; i++) {
+        for (let i = 0; i < channels.length; i++) {
             if (channels[i].stealth !== true) {
-                data += `#EXTINF:0 tvg-id="${channels[i].number}" CUID="${channels[i].number}" tvg-chno="${channels[i].number}" tvg-name="${channels[i].name}" tvg-logo="${channels[i].icon}" group-title="${channels[i].groupTitle}",${channels[i].name}\n`
-                data += `{{host}}/video?channel=${channels[i].number}\n`
+                data += `#EXTINF:0 tvg-id="${channels[i].number}" CUID="${channels[i].number}" tvg-chno="${channels[i].number}" tvg-name="${channels[i].name}" tvg-logo="${channels[i].icon}" group-title="${channels[i].groupTitle}",${channels[i].name}\n`;
+                data += `{{host}}/video?channel=${channels[i].number}\n`;
             }
         }
         if (channels.length === 0) {
-            data += `#EXTINF:0 tvg-id="1" tvg-chno="1" tvg-name="dizqueTV" tvg-logo="{{host}}/resources/dizquetv.png" group-title="dizqueTV",dizqueTV\n`
-            data += `{{host}}/setup\n`
+            data += `#EXTINF:0 tvg-id="1" tvg-chno="1" tvg-name="dizqueTV" tvg-logo="{{host}}/resources/dizquetv.png" group-title="dizqueTV",dizqueTV\n`;
+            data += `{{host}}/setup\n`;
         }
-        let saveCacheThread = async() => {
+        const saveCacheThread = async () => {
             try {
-                await this.cacheService.setCache('channels.m3u', data);
+                await this.cacheService.setCache("channels.m3u", data);
                 this.cacheReady = true;
-            } catch(err) {
+            } catch (err) {
                 console.error(err);
             }
         };

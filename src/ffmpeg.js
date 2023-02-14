@@ -1,4 +1,6 @@
-const spawn = require("child_process").spawn;
+"use strict";
+
+const { spawn } = require("child_process");
 const events = require("events");
 
 const MAXIMUM_ERROR_DURATION_MS = 60000;
@@ -28,7 +30,7 @@ class FFMPEG extends events.EventEmitter {
         if (
             typeof channel.transcoding !== "undefined" &&
             channel.transcoding.targetResolution != null &&
-            typeof channel.transcoding.targetResolution != "undefined" &&
+            typeof channel.transcoding.targetResolution !== "undefined" &&
             channel.transcoding.targetResolution != ""
         ) {
             resString = channel.transcoding.targetResolution;
@@ -37,7 +39,7 @@ class FFMPEG extends events.EventEmitter {
         if (
             typeof channel.transcoding !== "undefined" &&
             channel.transcoding.videoBitrate != null &&
-            typeof channel.transcoding.videoBitrate != "undefined" &&
+            typeof channel.transcoding.videoBitrate !== "undefined" &&
             channel.transcoding.videoBitrate != 0
         ) {
             opts.videoBitrate = channel.transcoding.videoBitrate;
@@ -46,7 +48,7 @@ class FFMPEG extends events.EventEmitter {
         if (
             typeof channel.transcoding !== "undefined" &&
             channel.transcoding.videoBufSize != null &&
-            typeof channel.transcoding.videoBufSize != "undefined" &&
+            typeof channel.transcoding.videoBufSize !== "undefined" &&
             channel.transcoding.videoBufSize != 0
         ) {
             opts.videoBufSize = channel.transcoding.videoBufSize;
@@ -64,15 +66,19 @@ class FFMPEG extends events.EventEmitter {
         this.hasBeenKilled = false;
         this.audioOnly = false;
     }
+
     setAudioOnly(audioOnly) {
         this.audioOnly = audioOnly;
     }
+
     async spawnConcat(streamUrl) {
         return await this.spawn(streamUrl, undefined, undefined, undefined, true, false, undefined, true);
     }
+
     async spawnStream(streamUrl, streamStats, startTime, duration, enableIcon, type) {
         return await this.spawn(streamUrl, streamStats, startTime, duration, true, enableIcon, type, false);
     }
+
     async spawnError(title, subtitle, duration) {
         if (!this.opts.enableFFMPEGTranscoding || this.opts.errorScreen == "kill") {
             console.error("error: " + title + " ; " + subtitle);
@@ -88,10 +94,10 @@ class FFMPEG extends events.EventEmitter {
         const streamStats = {
             videoWidth: this.wantedW,
             videoHeight: this.wantedH,
-            duration: duration,
+            duration,
         };
         return await this.spawn(
-            { errorTitle: title, subtitle: subtitle },
+            { errorTitle: title, subtitle },
             streamStats,
             undefined,
             `${streamStats.duration}ms`,
@@ -101,6 +107,7 @@ class FFMPEG extends events.EventEmitter {
             false,
         );
     }
+
     async spawnOffline(duration) {
         if (!this.opts.enableFFMPEGTranscoding) {
             console.log(
@@ -113,7 +120,7 @@ class FFMPEG extends events.EventEmitter {
         const streamStats = {
             videoWidth: this.wantedW,
             videoHeight: this.wantedH,
-            duration: duration,
+            duration,
         };
         return await this.spawn(
             { errorTitle: "offline" },
@@ -126,6 +133,7 @@ class FFMPEG extends events.EventEmitter {
             false,
         );
     }
+
     async spawn(streamUrl, streamStats, startTime, duration, limitRead, watermark, type, isConcatPlaylist) {
         const ffmpegArgs = [
             `-threads`,
@@ -568,22 +576,23 @@ class FFMPEG extends events.EventEmitter {
                     return;
                 }
                 if (!this.sentData) {
-                    this.emit("error", { code: code, cmd: `${this.opts.ffmpegPath} ${ffmpegArgs.join(" ")}` });
+                    this.emit("error", { code, cmd: `${this.opts.ffmpegPath} ${ffmpegArgs.join(" ")}` });
                 }
                 console.log(`${this.ffmpegName} exited with code 255.`);
                 this.emit("close", code);
             } else {
                 console.log(`${this.ffmpegName} exited with code ${code}.`);
-                this.emit("error", { code: code, cmd: `${this.opts.ffmpegPath} ${ffmpegArgs.join(" ")}` });
+                this.emit("error", { code, cmd: `${this.opts.ffmpegPath} ${ffmpegArgs.join(" ")}` });
             }
         });
 
         return this.ffmpeg.stdout;
     }
+
     kill() {
         console.log(`${this.ffmpegName} RECEIVED kill() command`);
         this.hasBeenKilled = true;
-        if (typeof this.ffmpeg != "undefined") {
+        if (typeof this.ffmpeg !== "undefined") {
             console.log(`${this.ffmpegName} this.ffmpeg.kill()`);
             this.ffmpeg.kill("SIGKILL");
         }

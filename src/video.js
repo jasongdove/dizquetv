@@ -1,3 +1,5 @@
+"use strict";
+
 const express = require("express");
 const helperFuncs = require("./helperFuncs");
 const FFMPEG = require("./ffmpeg");
@@ -8,7 +10,7 @@ const ProgramPlayer = require("./program-player");
 const channelCache = require("./channel-cache");
 const wereThereTooManyAttempts = require("./throttler");
 
-module.exports = { router: video, shutdown: shutdown };
+module.exports = { router: video, shutdown };
 
 let StreamCount = 0;
 
@@ -45,7 +47,6 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
         ffmpeg.on("error", (err) => {
             console.error("FFMPEG ERROR", err);
             res.status(500).send("FFMPEG ERROR");
-            return;
         });
         ffmpeg.on("close", () => {
             res.end();
@@ -109,7 +110,6 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
             console.error("FFMPEG ERROR", err);
             // status was already sent
             stop();
-            return;
         });
 
         ffmpeg.on("close", stop);
@@ -133,12 +133,8 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
         );
         ff.pipe(res);
     };
-    router.get("/video", async (req, res) => {
-        return await concat(req, res, false);
-    });
-    router.get("/radio", async (req, res) => {
-        return await concat(req, res, true);
-    });
+    router.get("/video", async (req, res) => await concat(req, res, false));
+    router.get("/radio", async (req, res) => await concat(req, res, true));
 
     // Stream individual video to ffmpeg concat above. This is used by the server, NOT the client
     const streamFunction = async (req, res, t0, allowSkip) => {
@@ -156,7 +152,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
             return;
         }
 
-        const audioOnly = "true" == req.query.audioOnly;
+        const audioOnly = req.query.audioOnly == "true";
         console.log(`/stream audioOnly=${audioOnly}`);
         const session = parseInt(req.query.session);
         const m3u8 = req.query.m3u8 === "1";
@@ -194,6 +190,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
         let brandChannel = channel;
         let redirectChannels = [];
         let upperBounds = [];
+        let lineupItem = null;
 
         const GAP_DURATION = 750;
         if (isLoading) {
@@ -249,7 +246,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
                     prog = {
                         program: {
                             isOffline: true,
-                            err: err,
+                            err,
                             duration: 60000,
                         },
                         timeElapsed: 0,
@@ -300,7 +297,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
                 prog == null ||
                 typeof prog === "undefined" ||
                 prog.program == null ||
-                typeof prog.program == "undefined"
+                typeof prog.program === "undefined"
             ) {
                 throw "No video to play, this means there's a serious unexpected bug or the channel db is corrupted.";
             }
@@ -365,12 +362,12 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
         combinedChannel.transcoding = channel.transcoding;
 
         const playerContext = {
-            lineupItem: lineupItem,
-            ffmpegSettings: ffmpegSettings,
+            lineupItem,
+            ffmpegSettings,
             channel: combinedChannel,
-            db: db,
-            m3u8: m3u8,
-            audioOnly: audioOnly,
+            db,
+            m3u8,
+            audioOnly,
         };
 
         let player = new ProgramPlayer(playerContext);
@@ -519,7 +516,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
 
         const ffmpegSettings = db["ffmpeg-settings"].find()[0];
 
-        cur = "59.0";
+        // const cur = "59.0";
 
         if (ffmpegSettings.enableFFMPEGTranscoding === true) {
             // data += `#EXTINF:${cur},\n`;
@@ -568,7 +565,7 @@ function video(channelService, fillerDB, db, programmingService, activeChannelSe
         const ffmpegSettings = db["ffmpeg-settings"].find()[0];
 
         const sessionId = StreamCount++;
-        const audioOnly = "true" == req.query.audioOnly;
+        const audioOnly = req.query.audioOnly == "true";
 
         if (
             ffmpegSettings.enableFFMPEGTranscoding === true &&

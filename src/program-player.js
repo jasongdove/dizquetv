@@ -1,3 +1,5 @@
+"use strict";
+
 /******************
  * This module is to take a "program" and return a stream that plays the
  * program. OR the promise fails which would mean that there was an error
@@ -18,36 +20,34 @@
  * deal with the thrown error.
  **/
 
-let OfflinePlayer = require('./offline-player');
-let PlexPlayer = require('./plex-player');;
-const EventEmitter = require('events');
-const helperFuncs = require('./helperFuncs');
-
+const OfflinePlayer = require("./offline-player");
+const PlexPlayer = require("./plex-player");
+const EventEmitter = require("events");
+const helperFuncs = require("./helperFuncs");
 
 class ProgramPlayer {
-
-    constructor( context ) {
+    constructor(context) {
         this.context = context;
-        let program = context.lineupItem;
+        const program = context.lineupItem;
         if (context.m3u8) {
             context.ffmpegSettings.normalizeAudio = false;
             // people might want the codec normalization to stay because of player support
             context.ffmpegSettings.normalizeResolution = false;
         }
-        if ( typeof(program.err) !== 'undefined') {
+        if (typeof program.err !== "undefined") {
             console.log("About to play error stream");
             this.delegate = new OfflinePlayer(true, context);
-        } else if (program.type === 'loading') {
+        } else if (program.type === "loading") {
             console.log("About to play loading stream");
             /* loading */
             context.isLoading = true;
             this.delegate = new OfflinePlayer(false, context);
-        } else if (program.type === 'interlude') {
+        } else if (program.type === "interlude") {
             console.log("About to play interlude stream");
             /* interlude */
             context.isInterlude = true;
             this.delegate = new OfflinePlayer(false, context);
-        } else if (program.type === 'offline') {
+        } else if (program.type === "offline") {
             console.log("About to play offline stream");
             /* offline */
             this.delegate = new OfflinePlayer(false, context);
@@ -56,7 +56,11 @@ class ProgramPlayer {
             /* plex */
             this.delegate = new PlexPlayer(context);
         }
-        this.context.watermark = helperFuncs.getWatermark( context.ffmpegSettings, context.channel, context.lineupItem.type);
+        this.context.watermark = helperFuncs.getWatermark(
+            context.ffmpegSettings,
+            context.channel,
+            context.lineupItem.type,
+        );
     }
 
     cleanUp() {
@@ -64,22 +68,23 @@ class ProgramPlayer {
     }
 
     async playDelegate(outStream) {
-        return await new Promise( async (accept, reject) => {
-
+        return await new Promise(async (accept, reject) => {
             try {
-                let stream = await this.delegate.play(outStream);
+                const stream = await this.delegate.play(outStream);
                 accept(stream);
-                let emitter = new EventEmitter();
+                const emitter = new EventEmitter();
+
                 function end() {
-                    reject( Error("Stream ended with no data") );
+                    reject(Error("Stream ended with no data"));
                     stream.removeAllListeners("data");
                     stream.removeAllListeners("end");
                     stream.removeAllListeners("close");
                     stream.removeAllListeners("error");
                     emitter.emit("end");
                 }
-                stream.on("error", err => {
-                    reject( Error("Stream ended in error with no data. " + JSON.stringify(err) ) );
+
+                stream.on("error", (err) => {
+                    reject(Error("Stream ended in error with no data. " + JSON.stringify(err)));
                     end();
                 });
                 stream.on("end", end);
@@ -87,14 +92,15 @@ class ProgramPlayer {
             } catch (err) {
                 reject(err);
             }
-        })
+        });
     }
+
     async play(outStream) {
         try {
             return await this.playDelegate(outStream);
-        } catch(err) {
-            if (! (err instanceof Error) ) {
-                err= Error("Program player had an error before receiving any data. " + JSON.stringify(err) );
+        } catch (err) {
+            if (!(err instanceof Error)) {
+                err = Error("Program player had an error before receiving any data. " + JSON.stringify(err));
             }
             if (this.context.lineupItem.err instanceof Error) {
                 console.log(err.stack);
@@ -103,10 +109,10 @@ class ProgramPlayer {
             console.log("Error when attempting to play video. Fallback to error stream: " + err.stack);
             //Retry once with an error stream:
             this.context.lineupItem = {
-                err: err,
+                err,
                 start: this.context.lineupItem.start,
                 streamDuration: this.context.lineupItem.streamDuration,
-            }
+            };
             this.delegate.cleanUp();
             this.delegate = new OfflinePlayer(true, this.context);
             return await this.play(outStream);

@@ -1,2 +1,3 @@
-module.exports = function () {
-}
+"use strict";
+
+module.exports = function () {};

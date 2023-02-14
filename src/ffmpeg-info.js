@@ -1,13 +1,16 @@
-const exec = require("child_process").exec;
+"use strict";
+
+const { exec } = require("child_process");
 
 class FFMPEGInfo {
     constructor(opts) {
         this.ffmpegPath = opts.ffmpegPath;
     }
+
     async getVersion() {
         try {
             const s = await new Promise((resolve, reject) => {
-                exec(`"${this.ffmpegPath}" -version`, function (error, stdout, stderr) {
+                exec(`"${this.ffmpegPath}" -version`, (error, stdout, stderr) => {
                     if (error !== null) {
                         reject(error);
                     } else {
