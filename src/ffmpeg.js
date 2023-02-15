@@ -3,14 +3,18 @@
 const { spawn } = require("child_process");
 const events = require("events");
 const {
-    SoftwarePipelineBuilder,
+    HardwareAccelerationMode,
     CommandGenerator,
     VideoInputFile,
     AudioInputFile,
     VideoStream,
+    AudioStream,
     FFmpegState,
     FrameState,
     VideoFormat,
+    FrameSize,
+    AudioState,
+    PipelineBuilderFactory,
 } = require("@jasongdove/ffmpeg-pipeline");
 
 const MAXIMUM_ERROR_DURATION_MS = 60000;
@@ -145,12 +149,13 @@ class FFMPEG extends events.EventEmitter {
     }
 
     async spawn(streamUrl, streamStats, startTime, duration, limitRead, watermark, type, isConcatPlaylist) {
-        const ffmpegArgs = [
-            `-threads`,
-            isConcatPlaylist ? 1 : this.opts.threads,
-            `-fflags`,
-            `+genpts+discardcorrupt+igndts`,
-        ];
+        const ffmpegArgs = [];
+
+        if (!isConcatPlaylist) {
+            ffmpegArgs.push("-threads", this.opts.threads);
+        }
+
+        ffmpegArgs.push("-fflags", "+genpts+discardcorrupt+igndts");
         let stillImage = false;
 
         if (limitRead === true && (this.audioOnly !== true || typeof streamUrl.errorTitle === "undefined")) {
@@ -470,6 +475,7 @@ class FFMPEG extends events.EventEmitter {
                     ffmpegArgs.push("-shortest");
                 }
             }
+            ffmpegArgs.push("-map", currentAudio);
             if (this.audioOnly !== true) {
                 ffmpegArgs.push(
                     "-map",
@@ -478,13 +484,15 @@ class FFMPEG extends events.EventEmitter {
                     transcodeVideo ? this.opts.videoEncoder : "copy",
                     `-sc_threshold`,
                     `1000000000`,
+                    "-video_track_timescale",
+                    "90000",
                 );
                 // -tune stillimage only applies to libx264
                 if (stillImage && this.opts.videoEncoder.toLowerCase() === "libx264") {
                     ffmpegArgs.push("-tune", "stillimage");
                 }
             }
-            ffmpegArgs.push("-map", currentAudio, `-flags`, `cgop+ilme`);
+            ffmpegArgs.push(`-flags`, `cgop+ilme`);
             if (transcodeVideo && this.audioOnly !== true) {
                 // add the video encoder flags
                 ffmpegArgs.push(`-maxrate:v`, `${this.opts.videoBitrate}k`, `-bufsize:v`, `${this.opts.videoBufSize}k`);
@@ -551,9 +559,31 @@ class FFMPEG extends events.EventEmitter {
 
         ffmpegArgs.push(`-f`, `mpegts`, `pipe:1`);
 
-        if (!isConcatPlaylist && this.audioOnly != true && typeof streamUrl.errorTitle === "undefined") {
-            const videoInputFile = new VideoInputFile(streamUrl, new Array(new VideoStream(streamStats.videoCodec)));
-            const audioInputFile = new AudioInputFile("");
+        if (!isConcatPlaylist && this.audioOnly !== true && typeof streamUrl.errorTitle === "undefined") {
+            const videoStream = new VideoStream(
+                streamStats.videoIndex,
+                streamStats.videoCodec,
+                new FrameSize(streamStats.videoWidth, streamStats.videoHeight),
+                streamStats.anamorphic,
+                streamStats.pixelAspectRatio,
+            );
+            const videoInputFile = new VideoInputFile(streamUrl, new Array(videoStream));
+
+            const audioStream = new AudioStream(
+                streamStats.audioIndex,
+                streamStats.audioCodec,
+                streamStats.audioChannels,
+            );
+            const desiredAudioState = new AudioState();
+            desiredAudioState.audioEncoder = this.opts.audioEncoder;
+            desiredAudioState.audioChannels = this.opts.audioChannels;
+            desiredAudioState.audioSampleRate = this.opts.audioSampleRate;
+            desiredAudioState.audioBitrate = this.opts.audioBitrate;
+            desiredAudioState.audioBufferSize = this.opts.audioBufSize;
+            if (this.apad) {
+                desiredAudioState.audioDuration = streamStats.duration;
+            }
+            const audioInputFile = new AudioInputFile(streamUrl, new Array(audioStream), desiredAudioState);
             const ffmpegState = new FFmpegState();
             ffmpegState.start = startTime === undefined ? null : `${startTime}`;
             if (typeof duration !== "undefined") {
@@ -561,18 +591,46 @@ class FFMPEG extends events.EventEmitter {
             }
             ffmpegState.metadataServiceProvider = "dizqueTV";
             ffmpegState.metadataServiceName = this.channel.name;
+            ffmpegState.softwareScalingAlgorithm = this.opts.scalingAlgorithm;
+            ffmpegState.softwareDeinterlaceFilter = this.opts.deinterlaceFilter;
 
-            const desiredState = new FrameState();
+            const targetResolution = this.ensureResolution
+                ? new FrameSize(this.wantedW, this.wantedH)
+                : new FrameSize(streamStats.videoWidth, streamStats.videoHeight);
+
+            const squarePixelFrameSize = videoStream.squarePixelFrameSize(targetResolution);
+            const desiredState = new FrameState(squarePixelFrameSize, targetResolution, false);
             desiredState.realtime = true;
-            desiredState.videoFormat = VideoFormat.Mpeg2Video;
 
-            const builder = new SoftwarePipelineBuilder(videoInputFile, audioInputFile);
+            const encoder = this.opts.videoEncoder.toLowerCase();
+            if (encoder.includes("264")) {
+                desiredState.videoFormat = VideoFormat.H264;
+            } else if (encoder.includes("265") || encoder.includes("hevc")) {
+                desiredState.videoFormat = VideoFormat.Hevc;
+            } else {
+                desiredState.videoFormat = VideoFormat.Mpeg2Video;
+            }
+
+            desiredState.videoBitrate = this.opts.videoBitrate;
+            desiredState.videoBufferSize = this.opts.videoBufSize;
+            desiredState.videoTrackTimescale = 90_000;
+            desiredState.interlaced =
+                streamStats.videoScanType === "interlaced" && this.opts.deinterlaceFilter !== "none";
+
+            // infer hardware acceleration based on encoder
+            let accel = HardwareAccelerationMode.None;
+            if (encoder.includes("nvenc")) {
+                accel = HardwareAccelerationMode.Nvenc;
+            }
+
+            const builder = PipelineBuilderFactory.getBuilder(accel, videoInputFile, audioInputFile);
             const steps = builder.build(ffmpegState, desiredState).pipelineSteps;
 
             const result = new CommandGenerator().generateArguments(videoInputFile, steps);
             console.log(result);
             ffmpegArgs.length = 0;
             ffmpegArgs.push(...result);
+            console.log(result.join(" "));
         } else {
             console.log("default args...");
             console.log(ffmpegArgs);
