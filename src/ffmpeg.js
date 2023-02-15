@@ -2,6 +2,16 @@
 
 const { spawn } = require("child_process");
 const events = require("events");
+const {
+    SoftwarePipelineBuilder,
+    CommandGenerator,
+    VideoInputFile,
+    AudioInputFile,
+    VideoStream,
+    FFmpegState,
+    FrameState,
+    VideoFormat,
+} = require("@jasongdove/ffmpeg-pipeline");
 
 const MAXIMUM_ERROR_DURATION_MS = 60000;
 const REALLY_RIDICULOUSLY_HIGH_FPS_FOR_DIZQUETVS_USECASE = 120;
@@ -72,11 +82,11 @@ class FFMPEG extends events.EventEmitter {
     }
 
     async spawnConcat(streamUrl) {
-        await this.spawn(streamUrl, undefined, undefined, undefined, true, false, undefined, true);
+        return this.spawn(streamUrl, undefined, undefined, undefined, true, false, undefined, true);
     }
 
     async spawnStream(streamUrl, streamStats, startTime, duration, enableIcon, type) {
-        await this.spawn(streamUrl, streamStats, startTime, duration, true, enableIcon, type, false);
+        return this.spawn(streamUrl, streamStats, startTime, duration, true, enableIcon, type, false);
     }
 
     async spawnError(title, subtitle, duration) {
@@ -96,7 +106,7 @@ class FFMPEG extends events.EventEmitter {
             videoHeight: this.wantedH,
             duration,
         };
-        await this.spawn(
+        return this.spawn(
             { errorTitle: title, subtitle },
             streamStats,
             undefined,
@@ -122,7 +132,7 @@ class FFMPEG extends events.EventEmitter {
             videoHeight: this.wantedH,
             duration,
         };
-        await this.spawn(
+        return this.spawn(
             { errorTitle: "offline" },
             streamStats,
             undefined,
@@ -540,6 +550,33 @@ class FFMPEG extends events.EventEmitter {
         }
 
         ffmpegArgs.push(`-f`, `mpegts`, `pipe:1`);
+
+        if (!isConcatPlaylist && this.audioOnly != true && typeof streamUrl.errorTitle === "undefined") {
+            const videoInputFile = new VideoInputFile(streamUrl, new Array(new VideoStream(streamStats.videoCodec)));
+            const audioInputFile = new AudioInputFile("");
+            const ffmpegState = new FFmpegState();
+            ffmpegState.start = startTime === undefined ? null : `${startTime}`;
+            if (typeof duration !== "undefined") {
+                ffmpegState.finish = `${duration}`;
+            }
+            ffmpegState.metadataServiceProvider = "dizqueTV";
+            ffmpegState.metadataServiceName = this.channel.name;
+
+            const desiredState = new FrameState();
+            desiredState.realtime = true;
+            desiredState.videoFormat = VideoFormat.Mpeg2Video;
+
+            const builder = new SoftwarePipelineBuilder(videoInputFile, audioInputFile);
+            const steps = builder.build(ffmpegState, desiredState).pipelineSteps;
+
+            const result = new CommandGenerator().generateArguments(videoInputFile, steps);
+            console.log(result);
+            ffmpegArgs.length = 0;
+            ffmpegArgs.push(...result);
+        } else {
+            console.log("default args...");
+            console.log(ffmpegArgs);
+        }
 
         const doLogs = this.opts.logFfmpeg && !isConcatPlaylist;
         if (this.hasBeenKilled) {
