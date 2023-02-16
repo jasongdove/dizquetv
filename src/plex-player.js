@@ -86,6 +86,7 @@ class PlexPlayer {
             const emitter = new EventEmitter();
             //setTimeout( () => {
             let ff = await ffmpeg.spawnStream(
+                stream.directPlay,
                 stream.streamUrl,
                 stream.streamStats,
                 streamStart,

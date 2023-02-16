@@ -87,11 +87,11 @@ class FFMPEG extends events.EventEmitter {
     }
 
     async spawnConcat(streamUrl) {
-        return this.spawn(streamUrl, undefined, undefined, undefined, true, false, undefined, true);
+        return this.spawn(false, streamUrl, undefined, undefined, undefined, true, false, undefined, true);
     }
 
-    async spawnStream(streamUrl, streamStats, startTime, duration, enableIcon, type) {
-        return this.spawn(streamUrl, streamStats, startTime, duration, true, enableIcon, type, false);
+    async spawnStream(directPlay, streamUrl, streamStats, startTime, duration, enableIcon, type) {
+        return this.spawn(directPlay, streamUrl, streamStats, startTime, duration, true, enableIcon, type, false);
     }
 
     async spawnError(title, subtitle, duration) {
@@ -112,6 +112,7 @@ class FFMPEG extends events.EventEmitter {
             duration,
         };
         return this.spawn(
+            false,
             { errorTitle: title, subtitle },
             streamStats,
             undefined,
@@ -138,6 +139,7 @@ class FFMPEG extends events.EventEmitter {
             duration,
         };
         return this.spawn(
+            false,
             { errorTitle: "offline" },
             streamStats,
             undefined,
@@ -149,7 +151,7 @@ class FFMPEG extends events.EventEmitter {
         );
     }
 
-    async spawn(streamUrl, streamStats, startTime, duration, limitRead, watermark, type, isConcatPlaylist) {
+    async spawn(directPlay, streamUrl, streamStats, startTime, duration, limitRead, watermark, type, isConcatPlaylist) {
         const ffmpegArgs = [];
 
         if (!isConcatPlaylist) {
@@ -560,7 +562,7 @@ class FFMPEG extends events.EventEmitter {
 
         ffmpegArgs.push(`-f`, `mpegts`, `pipe:1`);
 
-        if (!isConcatPlaylist && this.audioOnly !== true && typeof streamUrl.errorTitle === "undefined") {
+        if (directPlay === true && !isConcatPlaylist && this.audioOnly !== true && typeof streamUrl.errorTitle === "undefined") {
             const pixelFormat = new UnknownPixelFormat("yuv420p", "yuv420p", streamStats.videoBitDepth);
 
             const videoStream = new VideoStream(
@@ -625,6 +627,8 @@ class FFMPEG extends events.EventEmitter {
             let accel = HardwareAccelerationMode.None;
             if (encoder.includes("nvenc")) {
                 accel = HardwareAccelerationMode.Nvenc;
+            } else if (encoder.includes("qsv")) {
+                accel = HardwareAccelerationMode.Qsv;
             }
 
             const builder = PipelineBuilderFactory.getBuilder(accel, videoInputFile, audioInputFile);
