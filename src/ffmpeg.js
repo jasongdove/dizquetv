@@ -15,6 +15,7 @@ const {
     FrameSize,
     AudioState,
     PipelineBuilderFactory,
+    UnknownPixelFormat,
 } = require("@jasongdove/ffmpeg-pipeline");
 
 const MAXIMUM_ERROR_DURATION_MS = 60000;
@@ -560,9 +561,12 @@ class FFMPEG extends events.EventEmitter {
         ffmpegArgs.push(`-f`, `mpegts`, `pipe:1`);
 
         if (!isConcatPlaylist && this.audioOnly !== true && typeof streamUrl.errorTitle === "undefined") {
+            const pixelFormat = new UnknownPixelFormat("yuv420p", "yuv420p", streamStats.videoBitDepth);
+
             const videoStream = new VideoStream(
                 streamStats.videoIndex,
                 streamStats.videoCodec,
+                pixelFormat,
                 new FrameSize(streamStats.videoWidth, streamStats.videoHeight),
                 streamStats.anamorphic,
                 streamStats.pixelAspectRatio,
