@@ -262,6 +262,10 @@ lang=en`;
                         ret.pixelP = 1;
                         ret.pixelQ = 1;
                     }
+                    ret.pixelAspectRatio =
+                        typeof stream.pixelAspectRatio === "undefined" ? "" : stream.pixelAspectRatio;
+                    ret.videoBitDepth = stream.bitDepth;
+                    ret.videoIndex = stream.index;
                     ret.videoCodec = stream.codec;
                     ret.videoWidth = stream.width;
                     ret.videoHeight = stream.height;
@@ -273,6 +277,7 @@ lang=en`;
                 }
                 // Audio. Only look at stream being used
                 if (stream.streamType == "2" && stream.selected == "1") {
+                    ret.audioIndex = stream.index;
                     ret.audioChannels = stream.channels;
                     ret.audioCodec = stream.codec;
                     ret.audioDecision = typeof stream.decision === "undefined" ? "copy" : stream.decision;
