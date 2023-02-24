@@ -92,7 +92,7 @@ class PlexPlayer {
                 streamStart,
                 streamDuration,
                 watermark,
-                lineupItem.type,
+                lineupItem,
             ); // Spawn the ffmpeg process
             ff.pipe(outStream, { end: false });
             //}, 100);

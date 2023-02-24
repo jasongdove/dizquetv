@@ -19,7 +19,7 @@ const CacheImageService = require("./src/services/cache-image-service");
 const ChannelService = require("./src/services/channel-service");
 
 const xmltv = require("./src/xmltv");
-const Plex = require("./src/plex");
+const { Plex, redirectRouter } = require("./src/plex");
 const constants = require("./src/constants");
 const ChannelDB = require("./src/dao/channel-db");
 const M3uService = require("./src/services/m3u-service");
@@ -290,6 +290,7 @@ app.use(api.router(db, channelService, fillerDB, customShowDB, xmltvInterval, gu
 app.use("/api/cache/images", cacheImageService.apiRouters());
 
 app.use(video.router(channelService, fillerDB, db, programmingService, activeChannelService));
+app.use(redirectRouter(db));
 app.use(hdhr.router);
 app.listen(process.env.PORT, () => {
     console.log(`HTTP server running on port: http://*:${process.env.PORT}`);

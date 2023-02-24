@@ -90,8 +90,8 @@ class FFMPEG extends events.EventEmitter {
         return this.spawn(false, streamUrl, undefined, undefined, undefined, true, false, undefined, true);
     }
 
-    async spawnStream(directPlay, streamUrl, streamStats, startTime, duration, enableIcon, type) {
-        return this.spawn(directPlay, streamUrl, streamStats, startTime, duration, true, enableIcon, type, false);
+    async spawnStream(directPlay, streamUrl, streamStats, startTime, duration, enableIcon, lineupItem) {
+        return this.spawn(directPlay, streamUrl, streamStats, startTime, duration, true, enableIcon, lineupItem, false);
     }
 
     async spawnError(title, subtitle, duration) {
@@ -151,7 +151,7 @@ class FFMPEG extends events.EventEmitter {
         );
     }
 
-    async spawn(directPlay, streamUrl, streamStats, startTime, duration, limitRead, watermark, type, isConcatPlaylist) {
+    async spawn(directPlay, streamUrl, streamStats, startTime, duration, limitRead, watermark, lineupItem, isConcatPlaylist) {
         const ffmpegArgs = [];
 
         if (!isConcatPlaylist) {
@@ -247,6 +247,15 @@ class FFMPEG extends events.EventEmitter {
                     }
 
                     if (pic !== null) {
+                        // force software encoders for loading screen
+                        if (this.opts.videoEncoder.includes("hevc_")) {
+                            this.opts.videoEncoder = "libx265";
+                        } else if (this.opts.videoEncoder.includes("h264_")) {
+                            this.opts.videoEncoder = "libx264";
+                        } else if (this.opts.videoEncoder.includes("mpeg2_")) {
+                            this.opts.videoEncoder = "mpeg2video";
+                        }
+
                         ffmpegArgs.push("-i", pic);
                         if (typeof duration === "undefined" && typeof streamStats.duration !== "undefined") {
                             // add 150 milliseconds just in case, exact duration seems to cut out the last bits of music some times.
@@ -257,6 +266,7 @@ class FFMPEG extends events.EventEmitter {
                         videoComplex += `;[scaled]pad=${iW}:${iH}:(ow-iw)/2:(oh-ih)/2[padded]`;
                         videoComplex += `;[padded]loop=loop=-1:size=1:start=0[looped]`;
                         videoComplex += `;[looped]realtime[videox]`;
+
                         // this tune apparently makes the video compress better
                         // when it is the same image
                         stillImage = true;
@@ -563,6 +573,21 @@ class FFMPEG extends events.EventEmitter {
         ffmpegArgs.push(`-f`, `mpegts`, `pipe:1`);
 
         if (directPlay === true && !isConcatPlaylist && this.audioOnly !== true && typeof streamUrl.errorTitle === "undefined") {
+            const url = new URL(streamUrl);
+            // call localhost instead of plex
+            url.host = "localhost";
+            url.protocol = "http";
+            url.port = process.env.PORT;
+
+            // don't include token in this request
+            // pathname is used in search, so set it before changing it
+            url.search = "";
+            url.searchParams.append("server", lineupItem.serverKey);
+            url.searchParams.append("url", url.pathname);
+
+            url.pathname = "/plex/media";
+
+
             const pixelFormat = new UnknownPixelFormat("yuv420p", "yuv420p", streamStats.videoBitDepth);
 
             const videoStream = new VideoStream(
@@ -573,7 +598,7 @@ class FFMPEG extends events.EventEmitter {
                 streamStats.anamorphic,
                 streamStats.pixelAspectRatio,
             );
-            const videoInputFile = new VideoInputFile(streamUrl, new Array(videoStream));
+            const videoInputFile = new VideoInputFile(url.toString(), new Array(videoStream));
 
             const audioStream = new AudioStream(
                 streamStats.audioIndex,
@@ -589,7 +614,7 @@ class FFMPEG extends events.EventEmitter {
             if (this.apad) {
                 desiredAudioState.audioDuration = streamStats.duration;
             }
-            const audioInputFile = new AudioInputFile(streamUrl, new Array(audioStream), desiredAudioState);
+            const audioInputFile = new AudioInputFile(url.toString(), new Array(audioStream), desiredAudioState);
             const ffmpegState = new FFmpegState();
             ffmpegState.start = startTime === undefined ? null : `${startTime}`;
             if (typeof duration !== "undefined") {
@@ -641,7 +666,7 @@ class FFMPEG extends events.EventEmitter {
             console.log(result.join(" "));
         } else {
             console.log("default args...");
-            console.log(ffmpegArgs);
+            console.log(ffmpegArgs.join(" "));
         }
 
         const doLogs = this.opts.logFfmpeg && !isConcatPlaylist;
