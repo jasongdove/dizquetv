@@ -19,7 +19,8 @@ const CacheImageService = require("./src/services/cache-image-service");
 const ChannelService = require("./src/services/channel-service");
 
 const xmltv = require("./src/xmltv");
-const { Plex, redirectRouter } = require("./src/plex");
+const Plex = require("./src/plex");
+const { redirectRouter } = require("./src/plex-router");
 const constants = require("./src/constants");
 const ChannelDB = require("./src/dao/channel-db");
 const M3uService = require("./src/services/m3u-service");
