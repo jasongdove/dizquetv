@@ -15,7 +15,8 @@ const {
     FrameSize,
     AudioState,
     PipelineBuilderFactory,
-    UnknownPixelFormat,
+    PixelFormatYuv420p,
+    PixelFormatYuv420p10Le,
 } = require("@jasongdove/ffmpeg-pipeline");
 
 const MAXIMUM_ERROR_DURATION_MS = 60000;
@@ -572,7 +573,12 @@ class FFMPEG extends events.EventEmitter {
 
         ffmpegArgs.push(`-f`, `mpegts`, `pipe:1`);
 
-        if (directPlay === true && !isConcatPlaylist && this.audioOnly !== true && typeof streamUrl.errorTitle === "undefined") {
+        if (
+            directPlay === true &&
+            !isConcatPlaylist &&
+            this.audioOnly !== true &&
+            typeof streamUrl.errorTitle === "undefined"
+        ) {
             const url = new URL(streamUrl);
             // call localhost instead of plex
             url.host = "localhost";
@@ -587,8 +593,8 @@ class FFMPEG extends events.EventEmitter {
 
             url.pathname = "/plex/media";
 
-
-            const pixelFormat = new UnknownPixelFormat("yuv420p", "yuv420p", streamStats.videoBitDepth);
+            const pixelFormat =
+                streamStats.videoBitDepth === 8 ? new PixelFormatYuv420p() : new PixelFormatYuv420p10Le();
 
             const videoStream = new VideoStream(
                 streamStats.videoIndex,
