@@ -63,7 +63,7 @@ module.exports = function ($timeout) {
                     }
                     updateNext = false;
                     scope.error = null;
-                    t = Math.floor((scope.slot.time % (24 * 60 * 60 * 1000)) / 1000);
+                    const t = Math.floor((scope.slot.time % (24 * 60 * 60 * 1000)) / 1000);
                     const s = t % 60;
                     const m = ((t - s) / 60) % 60;
                     const h = (t - m * 60 - s) / 3600;

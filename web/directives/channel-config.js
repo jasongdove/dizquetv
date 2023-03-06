@@ -1328,7 +1328,7 @@ module.exports = function ($timeout, $location, dizquetv, resolutionOptions, get
                     if (added[scope.channel.fillerCollections[index].id] !== true) {
                         options.push({
                             id: scope.channel.fillerCollections[index].id,
-                            name: `[${f.id}]`,
+                            name: `[${scope.channel.fillerCollections[index].id}]`,
                         });
                     }
                     return options;

@@ -255,7 +255,7 @@ module.exports = function ($scope, $timeout, dizquetv) {
                 a = $scope.t0;
                 hasStart = false;
                 $scope.enableBack = true;
-            } else if (a > $scope.t0 && i == 0) {
+            } else if (a > $scope.t0 && i === 0) {
                 ch.programs.push({
                     duration: addDuration(a - $scope.t0),
                     showTitle: "",
@@ -277,11 +277,11 @@ module.exports = function ($scope, $timeout, dizquetv) {
             }
 
             if (typeof program.sub !== "undefined") {
-                ps = String(program.sub.season);
+                let ps = String(program.sub.season);
                 if (ps.length < 2) {
                     ps = "0" + ps;
                 }
-                pe = String(program.sub.episode);
+                let pe = String(program.sub.episode);
                 if (pe.length < 2) {
                     pe = "0" + pe;
                 }
@@ -331,8 +331,8 @@ module.exports = function ($scope, $timeout, dizquetv) {
     $scope.checkUpdates = async () => {
         try {
             console.log("get status " + new Date());
-            const status = await dizquetv.getGuideStatus();
-            const t = new Date(status.lastUpdate).getTime();
+            const status2 = await dizquetv.getGuideStatus();
+            const t = new Date(status2.lastUpdate).getTime();
             if (t > $scope.lastUpdate) {
                 $scope.refreshManaged();
             } else {

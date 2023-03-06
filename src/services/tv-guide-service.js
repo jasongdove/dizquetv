@@ -26,7 +26,7 @@ class TVGuideService extends events.EventEmitter {
     }
 
     async get() {
-        while (this.cached == null) {
+        while (this.cached === null) {
             await _wait(100);
         }
 
