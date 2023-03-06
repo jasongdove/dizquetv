@@ -12,6 +12,10 @@
     "plugins": ["prettier"],
     "rules": {
         "require-jsdoc": 0,
-        "prettier/prettier": ["error"]
+        "prettier/prettier": ["error"],
+        "max-statements": ["error", 1000]
+    },
+    "globals": {
+        "angular": "readonly"
     }
 }
